@@ -1,0 +1,67 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.alert {
+    margin-bottom: 1px;
+    height: 30px;
+    line-height: 30px;
+    padding: 0px 15px;
+}
+
+.control-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #0056A4;
+    margin: 0px;
+    padding-top: 10px;
+    padding-bottom: 0px;
+}
+
+.display-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #0056A4;
+}
+
+.form-control, .form-select {
+    /*    border: thin solid;*/
+    margin: 1px;
+    /*padding: 3px 10px 3px 10px;*/
+}
+
+.table.dataTable thead tr {
+    background-color: lightgrey !important;
+}
+
+.no-bullets {
+    list-style-type: none;
+}
+
+.label-display {
+    border: 1px solid #ccc; /* Match select border */
+    padding: 5px; /* Match select padding */
+    font-size: 16px; /* Match select font size */
+    border-radius: 4px; /* Match select rounded corners */
+    margin-left: 5px; /* Space between select and text */
+    white-space: nowrap; /* Prevent text from wrapping */
+    overflow: hidden; /* Hide overflowing text */
+    text-overflow: ellipsis; /* Add ellipsis (...) for overflow */
+    /* Add any other styles to match select box (background, font, etc.) */
+    background-color: #fff; /* Example background color */
+}

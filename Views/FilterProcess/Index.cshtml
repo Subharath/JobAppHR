@@ -1,0 +1,68 @@
+﻿<link href="~/lib/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" />
+
+<form asp-action="ViewApplicantList">
+    <div class="form-group row">
+        <div><h6>Start filtering process for Intakes which are set to AUTO filtering mode</h6></div>
+        <br />
+        <br />
+        <div class="col-2">
+            <label class="control-label">Select Intake Code</label>
+        </div>
+        <div class="col-3">
+@*             <select name="IntakeCode" id="IntakeCode" class="form-select form-select-sm"
+                    asp-items="@ViewBag.IntakeCode">
+            </select> *@
+            <select name="IntakeCode" id="IntakeCode" class="selectpicker">
+                <optgroup label="Normal Intakes">
+                    @{
+                        foreach (var item in (List<string>)ViewBag.IntakeCode)
+                        {
+                            <option>@item</option>
+                        }
+                    }
+                </optgroup>
+                <optgroup label="Talent Pool Intakes">
+                    @{
+                        foreach (var item in (List<string>)ViewBag.TPCode)
+                        {
+                            <option>@item</option>
+                        }
+                    }
+                </optgroup>
+            </select>
+        </div>
+        <div class="col-2">
+            <input type="button" value="View" class="btn btn-primary btn-sm" id="btnView" />
+        </div>
+    </div>
+</form>
+
+<hr />
+
+<div id="searchResults">
+</div>
+
+@section Scripts {
+    <script src="~/lib/bootstrap-select/js/bootstrap-select.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            if ('@ViewBag.IsSelected' == "YES")
+            {
+                loadResult();
+            }
+
+            $('#btnView').click(function () {
+                loadResult();
+            });
+
+            function loadResult()
+            {
+                var url = '@Url.Action("ViewSummary", "FilterProcess")';
+                var intakeCode = $('#IntakeCode').val();
+                $('#searchResults').load(url, { intakeCode: intakeCode });
+            }
+        })
+    </script>
+}

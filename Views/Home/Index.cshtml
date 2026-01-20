@@ -1,0 +1,18 @@
+﻿@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+@ViewBag.Message
+
+<div class="container d-flex justify-content-center">
+    <div class="mt-4 p-5 bg-light text-black border border-1 border-light rounded-3">
+        <div class="col-12">
+            <h3>JOBAPP - HR Administration</h3>
+            <button class="btn btn-lg btn-primary w-100 mt-3" onclick="location.href='@Url.Action("AzureLogin", "Home")'">Login with Azure</button>
+        </div>    
+    </div>
+</div>
+
+
+

@@ -1,0 +1,45 @@
+﻿<form asp-action="ViewApplicantList">
+    <div class="form-group row">
+        <div><h6>Start filtering process for Intakes which are set to MANUAL filtering mode</h6></div>
+        <br />
+        <br />
+        <div class="col-2">
+            <label class="control-label">Select Intake Code</label>
+        </div>
+        <div class="col-2">
+            <select name="IntakeCode" id="IntakeCode" class="form-select form-select-sm" asp-items="@ViewBag.IntakeCode">
+            </select>
+        </div>
+        <div class="col-2">
+            <input type="button" value="View" class="btn btn-primary btn-sm" id="btnView" />
+        </div>
+    </div>
+</form>
+
+<hr />
+
+<div id="searchResults">
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            
+            if ('@ViewBag.IsSelected' == "YES")
+            {
+                loadResult();
+            }
+
+            $('#btnView').click(function () {
+                loadResult();
+            });
+
+            function loadResult()
+            {
+                var url = '@Url.Action("ViewSummary", "ManualProcess")';
+                var intakeCode = $('#IntakeCode').val();
+                $('#searchResults').load(url, { intakeCode: intakeCode });
+            }
+        });
+    </script>
+}

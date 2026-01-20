@@ -1,0 +1,127 @@
+﻿@model JobAppHR.Models.JobPosition
+
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .bordered {
+        border-radius: 10px;
+        border: thin solid lightgrey;
+        padding: 5px;
+        margin: 0px;
+    }
+</style>
+
+<h3>Edit - Job Position</h3>
+<div class="alert alert-info">
+    <h5 style="text-align: center">@ViewBag.Message</h5>
+</div>
+
+<hr />
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="JobPositionID" class="form-control" />
+            <div class="row">
+                <div class="form-group col-4">
+                    <label asp-for="JobPositionName" class="control-label"></label>
+                    <input asp-for="JobPositionName" class="form-control form-control-sm" maxlength="50" />
+                    <span asp-validation-for="JobPositionName" class="text-danger"></span>
+                </div>
+            
+                <div class="form-group col-2">
+                    <label asp-for="JobPositionCode" class="control-label"></label>
+                    <input asp-for="JobPositionCode" class="form-control form-control-sm text-uppercase" maxlength="6" readonly/>
+                    <span asp-validation-for="JobPositionCode" class="text-danger"></span>
+                </div>
+            
+                <div class="form-group col-2">
+                    <label asp-for="JobTemplate" class="control-label"></label>
+                    <select asp-for="JobTemplate" asp-items="@ViewBag.JobTemplate" class="form-select form-select-sm">
+                    </select>
+                    <span asp-validation-for="JobTemplate" class="text-danger"></span>
+                </div>
+
+                <div class="form-group col-3">
+                    <label asp-for="TalentPoolJob" class="control-label"></label>
+                    <select asp-for="TalentPoolJob" class="form-select form-select-sm">
+                        <option>YES</option>
+                        <option>NO</option>
+                    </select>
+                    <span asp-validation-for="TalentPoolJob" class="text-danger"></span>
+                </div>
+            </div>
+            <br />
+            Mandatory Details of following required
+            <div class="row bordered">
+                <div class="form-group col-2">
+                    <label asp-for="OLRequired" class="control-label"></label>
+                    <div>
+                        <input type="radio" asp-for="OLRequired" value="1" /> Yes
+                        <input type="radio" asp-for="OLRequired" value="0" /> No
+                    </div>
+                    <span asp-validation-for="OLRequired" class="text-danger"></span>
+                </div>
+                <br />
+                <div class="form-group col-2">
+                    <label asp-for="ALRequired" class="control-label"></label>
+                    <div>
+                        <input type="radio" asp-for="ALRequired" value="1" /> Yes
+                        <input type="radio" asp-for="ALRequired" value="0" /> No
+                    </div>
+                    <span asp-validation-for="ALRequired" class="text-danger"></span>
+                </div>
+                <br />
+                <div class="form-group col-3">
+                    <label asp-for="HERequired" class="control-label"></label>
+                    <div>
+                        <input type="radio" asp-for="HERequired" value="1" /> Yes
+                        <input type="radio" asp-for="HERequired" value="0" /> No
+                    </div>
+                    <span asp-validation-for="HERequired" class="text-danger"></span>
+                </div>
+                <br />
+                @*<div class="form-group col-3">
+                    <label asp-for="PQRequired" class="control-label"></label>
+                    <div>
+                        <input type="radio" asp-for="PQRequired" value="1" /> Yes
+                        <input type="radio" asp-for="PQRequired" value="0" /> No
+                    </div>
+                    <span asp-validation-for="PQRequired" class="text-danger"></span>
+                </div>
+                <br />
+                <div class="form-group col-2">
+                    <label asp-for="WERequired" class="control-label"></label>
+                    <div>
+                        <input type="radio" asp-for="WERequired" value="1" /> Yes
+                        <input type="radio" asp-for="WERequired" value="0" /> No
+                    </div>
+                    <span asp-validation-for="WERequired" class="text-danger"></span>
+                </div>*@
+            </div>
+            <br />
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>                
+        </form>
+    </div>
+</div>
+<br />
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        var val = '@ViewBag.Message';
+        if (val != "")
+            $('.alert').show();
+        else
+            $('.alert').hide();
+    </script>
+}

@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - JobApp-HR</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/JobAppHR.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.css" />
+    <link href="~/lib/datatable/css/datatables.css" rel="stylesheet" />
+    <link href="~/lib/datatables.net/css/datatables.css" rel="stylesheet" />
+
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">JOBAPP-HR</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link text-dark dropdown-toggle" href="#" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Master Data
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+                                <li><a class="dropdown-item small" asp-controller="JobPosition" asp-action="Index">Job Positions</a></li>
+                                <li><a class="dropdown-item small" asp-controller="Subject" asp-action="Index">Subjects</a></li>
+                                <li><a class="dropdown-item small" asp-controller="HEInstitute" asp-action="Index">Higher Education Institutes</a></li>
+                                <li><a class="dropdown-item small" asp-controller="PQInstitute" asp-action="Index">Professional Qualification Institutes</a></li>
+                                <li><a class="dropdown-item small" asp-controller="QualType" asp-action="Index">Qualification Types</a></li>
+                                <li><a class="dropdown-item small" asp-controller="QualName" asp-action="Index">Qualification Names</a></li>
+                                <li><a class="dropdown-item small" asp-controller="MembershipType" asp-action="Index">Membership Types</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item small" asp-controller="Intake" asp-action="Index">Intake</a></li>
+                                <li><a class="dropdown-item small" asp-controller="TPIntake" asp-action="Index">Talent Pool Intake</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item small" asp-controller="UserManagement" asp-action="Index">System Users</a></li>
+
+                            </ul>                            
+                        </li>
+                        @*<li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="CandidateDetails" asp-action="Index">Candidate Details</a>
+                        </li>*@
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="IntakeApplicant" asp-action="Index">Applicant Details</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link text-dark dropdown-toggle" href="#" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Application Screening
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDarkDropdownMenuLink">
+                                <li><a class="dropdown-item small" asp-controller="FilterProcess" asp-action="Index">Auto Filtering</a></li>
+                                <li><a class="dropdown-item small" asp-controller="ManualProcess" asp-action="Index">Manual Filtering</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item small" asp-controller="EligibleApplicant" asp-action="IntakeSummary">Final List - Normal Intakes</a></li>
+                                <li><a class="dropdown-item small" asp-controller="EligibleApplicant" asp-action="TalentPoolIntakes">Final List - TP Intakes</a></li>
+
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="no-bullets"><span><i class="fa-solid fa-user-large" aria-hidden="true"></i></span>&nbsp;@Context.Session.GetString("UserId") - @Context.Session.GetString("UserName")</li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+@*    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2024 - JOBAPP
+        </div>
+    </footer>*@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @*<script src="~/lib/datatable/js/datatables.js"></script>*@
+    <script src="~/lib/datatables.net/js/datatables.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

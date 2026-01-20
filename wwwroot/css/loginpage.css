@@ -1,0 +1,20 @@
+﻿body {
+    /*background: linear-gradient(#808def, white) no-repeat;*/
+    background-image: url('../images/slt_background_1.png');
+    height: 100%;
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.8;
+}
+
+a {
+    color: inherit;
+}
+
+.sltgreen {
+    color: #4DB848;
+}
+
+
