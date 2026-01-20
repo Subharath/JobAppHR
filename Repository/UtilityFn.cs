@@ -89,15 +89,27 @@ namespace JobAppHR.Repository
         {
             User user = new();
 
-            //First get user claims
-            var claims = _httpContextAccessor.HttpContext?.User.Claims.ToList();
+            var httpContext = _httpContextAccessor.HttpContext;
+            var claims = httpContext?.User?.Claims?.ToList() ?? new List<Claim>();
 
-            //Filter specific claim
-            user.UserId = claims.First(c => c.Type == "UserId").Value;
-            user.UserName = claims.First(c => c.Type == "UserName").Value;
-            user.UserEmail = claims.First(c => c.Type == "UserEmail").Value;
-            user.UserGroup = claims.First(c => c.Type == "UserGroup").Value;
-            user.UserRole = claims.First(c => c.Type == "UserRole").Value;
+            string ReadClaimOrSession(string claimType, string sessionKey)
+            {
+                var claimValue = claims.FirstOrDefault(c => c.Type == claimType)?.Value;
+                if (!string.IsNullOrEmpty(claimValue))
+                    return claimValue;
+
+                var sessionValue = _session.GetString(sessionKey);
+                return sessionValue ?? string.Empty;
+            }
+
+            user.UserId = ReadClaimOrSession("UserId", "UserId");
+            user.UserName = ReadClaimOrSession("UserName", "UserName");
+            user.UserEmail = ReadClaimOrSession("UserEmail", "UserEmail");
+            user.UserGroup = ReadClaimOrSession("UserGroup", "UserGroup");
+            user.UserRole = ReadClaimOrSession("UserRole", "UserRole");
+
+            if (string.IsNullOrEmpty(user.UserId))
+                throw new InvalidOperationException("User context is missing. Please sign in again.");
 
             _session.SetString("UserId", user.UserId);
             _session.SetString("UserName", user.UserName);
