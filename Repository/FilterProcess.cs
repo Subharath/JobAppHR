@@ -431,8 +431,26 @@ namespace JobAppHR.Repository
             DataTable temptbl, scoretbl, maintbl, resulttbl;
             List<OLFilter> list = new();
 
+            //Get intake requirements from database to determine which stage to query
+            //This is more robust than relying on currentStage parameter
+            //If A/L is required for this position, check Stage2Status (A/L passed)
+            //If A/L is NOT required, check Stage1Status (Age passed) - A/L was skipped
+            string sql = "SELECT ALRequired FROM Intake WHERE IntakeCode = '" + intakeCode + "'";
+            DataTable intakeTable = _DBOperations.SelectRows(sql);
+            bool alRequired = false;
+            
+            if (intakeTable.Rows.Count > 0)
+            {
+                alRequired = intakeTable.Rows[0]["ALRequired"].ToString() == "1" || intakeTable.Rows[0]["ALRequired"].ToString().ToLower() == "true";
+            }
+
             //get current stage passed applicants of the selected intakecode
-            string sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+            //if A/L was required, check Stage2Status (A/L result), otherwise check Stage1Status (Age result)
+            if (alRequired)
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+            else
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage1Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+            
             temptbl = _DBOperations.SelectRows(sql);
 
             //get O/L grades of all the applicants in the selected intakecode
@@ -581,8 +599,23 @@ namespace JobAppHR.Repository
             List<OLFilter> list = new();
             ApiResponse apiResponse;
 
+            //get intake requirements to determine which stage to query
+            string sql = "SELECT ALRequired FROM Intake WHERE IntakeCode = '" + intakeCode + "'";
+            DataTable intakeTable = _DBOperations.SelectRows(sql);
+            bool alRequired = false;
+            
+            if (intakeTable.Rows.Count > 0)
+            {
+                alRequired = intakeTable.Rows[0]["ALRequired"].ToString() == "1" || intakeTable.Rows[0]["ALRequired"].ToString().ToLower() == "true";
+            }
+
             //get current stage passed applicants of the selected intakecode
-            string sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage2Status = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
+            //if A/L was required, check Stage2Status (A/L result), otherwise check Stage1Status (Age result)
+            if (alRequired)
+                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage2Status = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
+            else
+                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage1Status = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
+            
             appDataTable = _DBOperations.SelectRows(sql);
 
             temptbl = appDataTable.Clone();
@@ -604,7 +637,11 @@ namespace JobAppHR.Repository
             _UtilityFn.ConvertToCSV(temptbl, fileNameAppData);
 
             //get current stage passed applicants results of the selected intakecode
-            sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage2Status = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+            if (alRequired)
+                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage2Status = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+            else
+                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage1Status = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+            
             resulttbl = _DBOperations.SelectRows(sql);
 
             //update all A/L results as 'A' as Fast API checks both A/L and O/L results same time. But at this stage we need only eligible applicants based on O/L only

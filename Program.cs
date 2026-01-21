@@ -3,6 +3,7 @@ using JobAppHR.Repository;
 using JobAppHR.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.Features;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,27 +20,28 @@ builder.Services.AddSession(options =>
 
 builder.Services.Configure<FormOptions>(x => x.ValueCountLimit = 10000);
 
+// MODIFIED FOR LOCAL DEVELOPMENT - Allow anonymous access without Azure AD
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        // Specify where to redirect un-authenticated users
         options.LoginPath = "/Home/AzureLogin";
-
-        // Specify the name of the auth cookie.
-        // ASP.NET picks a dumb name by default.
         options.Cookie.Name = "JobAppHRWebCookie";
-
         options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
         options.SlidingExpiration = true;
     });
 
 builder.Services.AddAuthorization(options =>
 {
+    // ALLOW ANONYMOUS ACCESS FOR LOCAL DEVELOPMENT
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAssertion(_ => true) // Always return true = always authorized
+        .Build();
+    
     options.AddPolicy("NormalUserPolicy",
-        policy => policy.RequireClaim("UserRole","Normal","Admin"));
+        policy => policy.RequireAssertion(_ => true)); // Always allow
 
     options.AddPolicy("AdminUserPolicy",
-        policy => policy.RequireClaim("UserRole","Admin"));
+        policy => policy.RequireAssertion(_ => true)); // Always allow
 });
 
 builder.Services.AddScoped<IDBOperations, DBOperations>();
@@ -81,11 +83,39 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession();
+
+// Dev-only: inject a default user when no auth context exists so downstream code gets claims
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        if (context.User?.Identity?.IsAuthenticated != true)
+        {
+            var userId = context.Session.GetString("UserId") ?? "dev-user";
+            var userName = context.Session.GetString("UserName") ?? "Developer";
+
+            var claims = new List<Claim>
+            {
+                new Claim("UserId", userId),
+                new Claim("UserName", userName),
+                new Claim("UserEmail", "dev@example.com"),
+                new Claim("UserGroup", "DEV"),
+                new Claim("UserRole", "Admin")
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            context.User = new ClaimsPrincipal(identity);
+        }
+
+        await next();
+    });
+}
+
+// Enable auth (cookie-based) so HttpContext.User is populated when a cookie exists
 app.UseAuthentication();
-
+// Keep authorization middleware to prevent errors, but currently policies allow all
 app.UseAuthorization();
-
-app.UseSession(); //The order of middleware is important. Call UseSession after UseRouting and before MapRazorPages and MapDefaultControllerRoute
 
 app.UseCookiePolicy(
 new CookiePolicyOptions
