@@ -49,7 +49,10 @@ namespace JobAppHR.Controllers
             string intakeCode = "";
 
             if (!string.IsNullOrEmpty(selectedIntakeCode))
+            {
                 ViewBag.IsSelected = "YES";
+                ViewBag.SelectedIntakeCode = selectedIntakeCode;
+            }
 
             foreach (DataRow dr in dataTable.Rows)
             {
@@ -264,23 +267,8 @@ namespace JobAppHR.Controllers
             //update the application table processed field
             _DBOperations.UpdateRecords("Application", applicationCodesTable, "ApplicationCode");
 
-            try
-            {
-                Intake intake = GetIntakeData(intakeCode);
-                if (intake.ALRequired == 1)
-                    return View("FilterByAL", await FilterByAL(intakeCode, currentStage));
-                else if (intake.OLRequired == 1)
-                    return View("FilterByOL", await FilterByOL(intakeCode, currentStage));
-                else
-                    return View("FilterByHEPQ", FilterByHEPQ(intakeCode, currentStage));
-            }
-            catch (Exception ex)
-            {
-                // Log the error and show a user-friendly error message
-                ViewBag.ErrorMessage = $"An error occurred while processing the A/L filtering: {ex.Message}";
-                ViewBag.IntakeCode = intakeCode;
-                return View("Error");
-            }
+            // Redirect to next stage with intake code preserved in URL
+            return RedirectToAction("FilterByStage", new { intakeCode = intakeCode, currentStage = "1", currentStatus = "PASS" });
         }
 
         [HttpPost]
@@ -364,11 +352,8 @@ namespace JobAppHR.Controllers
             dataTable.AcceptChanges();
             message = _DBOperations.UpdateRecords("FilteredData", dataTable, "ApplicationCode");
 
-            Intake intake = GetIntakeData(intakeCode);
-            if (intake.OLRequired == 1)
-                return View("FilterByOL", await FilterByOL(intakeCode, currentStage));
-            else
-                return View("FilterByHEPQ", FilterByHEPQ(intakeCode, currentStage));
+            // Redirect to next stage with intake code preserved in URL
+            return RedirectToAction("FilterByStage", new { intakeCode = intakeCode, currentStage = "2", currentStatus = "PASS" });
         }
 
         [HttpPost]
@@ -457,7 +442,8 @@ namespace JobAppHR.Controllers
             dataTable.AcceptChanges();
             message = _DBOperations.UpdateRecords("FilteredData", dataTable, "ApplicationCode");
 
-            return View("FilterByHEPQ", FilterByHEPQ(intakeCode, currentStage));
+            // Redirect to next stage with intake code preserved in URL
+            return RedirectToAction("FilterByStage", new { intakeCode = intakeCode, currentStage = "3", currentStatus = "PASS" });
         }
 
         [HttpPost]
@@ -514,7 +500,8 @@ namespace JobAppHR.Controllers
             //update eligible list
             var message = _DBOperations.UpdateRecords("FilteredData", dataTable, "ApplicationCode");
 
-            return View("FilterFinal", FilterFinal(intakeCode, currentStage));
+            // Redirect to next stage with intake code preserved in URL
+            return RedirectToAction("FilterByStage", new { intakeCode = intakeCode, currentStage = "4", currentStatus = "PASS" });
         }
 
         [HttpPost]
@@ -645,7 +632,8 @@ namespace JobAppHR.Controllers
             //update eligible list
             var message = _DBOperations.UpdateRecords("FilteredData", dataTable, "ApplicationCode");
 
-            return View("ShowFinal", ShowFinal(intakeCode, currentStage));
+            // Redirect to show final results with intake code preserved in URL
+            return RedirectToAction("FilterByStage", new { intakeCode = intakeCode, currentStage = "FINAL", currentStatus = "PASS" });
         }
 
 

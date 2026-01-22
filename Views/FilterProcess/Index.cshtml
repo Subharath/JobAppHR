@@ -17,7 +17,8 @@
                     @{
                         foreach (var item in (List<string>)ViewBag.IntakeCode)
                         {
-                            <option>@item</option>
+                            var isSelected = !string.IsNullOrEmpty(ViewBag.SelectedIntakeCode) && item == ViewBag.SelectedIntakeCode;
+                            <option selected="@isSelected">@item</option>
                         }
                     }
                 </optgroup>
@@ -25,7 +26,8 @@
                     @{
                         foreach (var item in (List<string>)ViewBag.TPCode)
                         {
-                            <option>@item</option>
+                            var isSelected = !string.IsNullOrEmpty(ViewBag.SelectedIntakeCode) && item == ViewBag.SelectedIntakeCode;
+                            <option selected="@isSelected">@item</option>
                         }
                     }
                 </optgroup>
@@ -54,7 +56,12 @@
             }
 
             $('#btnView').click(function () {
-                loadResult();
+                var intakeCode = $('#IntakeCode').val();
+                if (intakeCode) {
+                    // Navigate to URL with selectedIntakeCode parameter
+                    // This ensures URL state matches UI state
+                    window.location = '@Url.Action("Index", "FilterProcess")' + '?selectedIntakeCode=' + encodeURIComponent(intakeCode);
+                }
             });
 
             function loadResult()
