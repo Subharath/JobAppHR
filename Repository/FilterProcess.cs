@@ -446,10 +446,11 @@ namespace JobAppHR.Repository
 
             //get current stage passed applicants of the selected intakecode
             //if A/L was required, check Stage2Status (A/L result), otherwise check Stage1Status (Age result)
+            //IMPORTANT: Only get records at current stage to avoid re-processing already filtered records
             if (alRequired)
-                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND CurrentStage = '2' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
             else
-                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage1Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage1Status = 'PASS' AND CurrentStage = '1' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
             
             temptbl = _DBOperations.SelectRows(sql);
 
@@ -611,10 +612,11 @@ namespace JobAppHR.Repository
 
             //get current stage passed applicants of the selected intakecode
             //if A/L was required, check Stage2Status (A/L result), otherwise check Stage1Status (Age result)
+            //IMPORTANT: Only get records at current stage to avoid re-processing already filtered records
             if (alRequired)
-                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage2Status = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage2Status = 'PASS' AND F.CurrentStage = '2' AND F.CurrentStatus = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
             else
-                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage1Status = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT A.* FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.Stage1Status = 'PASS' AND F.CurrentStage = '1' AND F.CurrentStatus = 'PASS' AND A.IntakeCode = '" + intakeCode + "'";
             
             appDataTable = _DBOperations.SelectRows(sql);
 
@@ -637,10 +639,11 @@ namespace JobAppHR.Repository
             _UtilityFn.ConvertToCSV(temptbl, fileNameAppData);
 
             //get current stage passed applicants results of the selected intakecode
+            //IMPORTANT: Only get records at current stage to avoid re-processing already filtered records
             if (alRequired)
-                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage2Status = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage2Status = 'PASS' AND F.CurrentStage = '2' AND F.CurrentStatus = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
             else
-                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage1Status = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT R.* FROM SEResult R INNER JOIN FilteredData F ON R.ApplicationCode = F.ApplicationCode WHERE F.Stage1Status = 'PASS' AND F.CurrentStage = '1' AND F.CurrentStatus = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
             
             resulttbl = _DBOperations.SelectRows(sql);
 
@@ -805,10 +808,8 @@ namespace JobAppHR.Repository
             string sql = "";
 
             //get current stage passed applicants of the selected intakecode with proper numeric sorting
-            if (currentStage == "3")
-                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage3Status = 'PASS' AND IntakeCode = '" + intakeCode + "' ORDER BY CAST(SUBSTRING(ApplicationCode, LEN(ApplicationCode) - CHARINDEX('/', REVERSE(ApplicationCode)) + 2, LEN(ApplicationCode)) AS INT)";
-            else
-                sql = "SELECT ApplicationCode FROM FilteredData WHERE CurrentStage = '" + currentStage + "' AND CurrentStatus = '" + currentStatus + "' AND IntakeCode = '" + intakeCode + "' ORDER BY CAST(SUBSTRING(ApplicationCode, LEN(ApplicationCode) - CHARINDEX('/', REVERSE(ApplicationCode)) + 2, LEN(ApplicationCode)) AS INT)";
+            //IMPORTANT: Always check CurrentStage and CurrentStatus to avoid re-processing already filtered records
+            sql = "SELECT ApplicationCode FROM FilteredData WHERE CurrentStage = '" + currentStage + "' AND CurrentStatus = '" + currentStatus + "' AND IntakeCode = '" + intakeCode + "' ORDER BY CAST(SUBSTRING(ApplicationCode, LEN(ApplicationCode) - CHARINDEX('/', REVERSE(ApplicationCode)) + 2, LEN(ApplicationCode)) AS INT)";
             
             temptbl = _DBOperations.SelectRows(sql);
 
@@ -892,7 +893,8 @@ namespace JobAppHR.Repository
             List<FinalFilter> list = new();
 
             //get current stage passed applicants of the selected intakecode
-            string sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage4Status = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+            //IMPORTANT: Only get records at Stage 4 with PASS status (not TO-CHECK) to avoid re-processing
+            string sql = "SELECT ApplicationCode FROM FilteredData WHERE CurrentStage = '4' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
             temptbl = _DBOperations.SelectRows(sql);
 
             //get work experience of all the applicants in the selected intakecode
