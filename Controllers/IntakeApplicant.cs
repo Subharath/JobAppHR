@@ -93,6 +93,7 @@ namespace JobAppHR.Controllers
             }
 
             ViewBag.IntakeCode = intakeCode;
+            ViewBag.ShowAll = showAll;
             return PartialView("_ApplicantListPartial", list);
         }
 
@@ -328,7 +329,7 @@ namespace JobAppHR.Controllers
                 return null;
         }
 
-        public IActionResult ExportToExcel(string intakeCode, string currentStage, int? freezeNo = 0)
+        public IActionResult ExportToExcel(string intakeCode, string currentStage, int? freezeNo = 0, bool showAll = false)
         {
             List<FullReportModel> list = new();
             string fileName = intakeCode + "_Applicants_" + (string.IsNullOrEmpty(currentStage) ? "All" : currentStage);
@@ -340,7 +341,7 @@ namespace JobAppHR.Controllers
             if (!string.IsNullOrWhiteSpace(intakeCode))
             {
                 //var tempList = _ManualProcess.FilterByAll(intakeCode, currentStage);
-                list = _ManualProcess.GetFullReportData(intakeCode, currentStage, freezeNo);
+                list = _ManualProcess.GetFullReportData(intakeCode, currentStage, freezeNo, showAll);
 
                 //var config = new MapperConfiguration(cfg =>
                 //    cfg.CreateMap<ManualFilter, FullReportModel>()

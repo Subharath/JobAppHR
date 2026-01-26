@@ -296,7 +296,7 @@ namespace JobAppHR.Repository
             return list;
         }
 
-        public List<FullReportModel> GetFullReportData(string intakeCode, string currentStage, int? freezeNo = 0)
+        public List<FullReportModel> GetFullReportData(string intakeCode, string currentStage, int? freezeNo = 0, bool showAll = false)
         {
             DataTable maintbl, resulttbl, mresulttbl, highertbl, profqualtbl, workexptbl, remarkstbl;
             string sql;
@@ -342,7 +342,11 @@ namespace JobAppHR.Repository
             }
             else
             {
-                sql = "SELECT " + fieldList1 + "," + fieldList2 + " FROM Application A  WHERE A.IntakeCode = '" + intakeCode + "' AND A.SaveStatus = 'OK'";
+                sql = "SELECT " + fieldList1 + "," + fieldList2 + " FROM Application A  WHERE A.IntakeCode = '" + intakeCode + "'";
+                if (!showAll)
+                {
+                    sql = sql + " AND A.SaveStatus = 'OK'";
+                }
                 maintbl = _DBOperations.SelectRows(sql);
             }
 
