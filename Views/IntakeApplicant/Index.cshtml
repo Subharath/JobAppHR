@@ -29,6 +29,7 @@
         <div class="d-flex align-items-center">
             <label id="JobPositionName" class="label-display me-4"></label>
             <input type="button" value="View" class="btn btn-primary btn-md ms-3" id="btnView" />
+            <input type="button" value="View All" class="btn btn-primary btn-md ms-3" id="btnViewAll" />
         </div>
 
 @*         <div class="flex-grow-1">
@@ -54,9 +55,17 @@
         $(document).ready(function () {
             var url = '@Url.Action("ViewApplicantList", "IntakeApplicant")';
             $('#btnView').click(function() {
+                loadApplicants(false);
+            });
+
+            $('#btnViewAll').click(function () {
+                loadApplicants(true);
+            });
+
+            function loadApplicants(showAll) {
                 var intakeCode = $('#IntakeCode').val();
-                $('#searchResults').load(url, { intakeCode: intakeCode });
-            })
+                $('#searchResults').load(url, { intakeCode: intakeCode, showAll: showAll });
+            }
 
             GetJobPositionName();
 

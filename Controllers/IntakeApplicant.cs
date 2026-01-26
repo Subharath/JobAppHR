@@ -72,12 +72,19 @@ namespace JobAppHR.Controllers
 
         // GET: IntakeApplication/Details/5
         [HttpPost]
-        public ActionResult ViewApplicantList(string intakeCode)
+        public ActionResult ViewApplicantList(string intakeCode, bool showAll = false)
         {
             List<ApplicantViewModel> list = new List<ApplicantViewModel>();
             if (intakeCode != null) {
                 string fieldList = "IntakeCode,ApplicationCode,Concat(Initials,' ',Surname, ' ') as NameWithInitials,FullName,NIC,Overage,concat(AgeYears,'Y ',AgeMonths, 'M ', AgeDays, 'D') as Age";
-                string sql = "SELECT " + fieldList + " FROM Application WHERE IntakeCode = '" + intakeCode + "' AND SaveStatus = 'OK'";
+                
+                string whereClause = "IntakeCode = '" + intakeCode + "'";
+                if (!showAll)
+                {
+                    whereClause += " AND SaveStatus = 'OK'";
+                }
+                string sql = "SELECT " + fieldList + " FROM Application WHERE " + whereClause;
+
                 
                 //DataTable tmpTable = _DBOperations.SelectRows("Application", fieldList, "IntakeCode", intakeCode, "");
                 DataTable tmpTable = _DBOperations.SelectRows(sql);
