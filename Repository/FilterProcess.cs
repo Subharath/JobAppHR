@@ -424,6 +424,11 @@ namespace JobAppHR.Repository
         public List<OLFilter> FilterByOL_Org(string intakeCode, string currentStage)
         {
             string examcode = "O/L";
+            var intakeParts = intakeCode.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var jobPositionCode = intakeParts.Length >= 2
+                ? $"{intakeParts[0]}/{intakeParts[1]}"
+                : intakeCode;
+            var ignoreMandatorySubjects = jobPositionCode.Equals("TEC/24", StringComparison.OrdinalIgnoreCase);
 
             //1.get the application codes who are PASS in the current stage
             //2.next check O/L results of those application codes 
@@ -485,7 +490,7 @@ namespace JobAppHR.Repository
             string successfulExamYear = "";
             bool isOk = false;
             
-            int mandatoryScore = 0, totalScore = 0, rating = 0;
+            int mandatoryScore = 0, totalScore = 0, rating = 0, creditScore = 0;
             DataRow[] drs;
 
             foreach (DataRow dr in temptbl.Rows) //current stage passed records
@@ -498,6 +503,7 @@ namespace JobAppHR.Repository
                 {
                     totalScore = 0;
                     mandatoryScore = 0;
+                    creditScore = 0;
                     mandatoryGrades = "";
                     rating = 0;
                     successfulExamYear = "";
@@ -510,7 +516,14 @@ namespace JobAppHR.Repository
                     {
                         rating = Convert.ToInt16(drtemp["Rating"]);
 
-                        if (drtemp["Mandatory"].ToString() == "YES")
+                        if (ignoreMandatorySubjects)
+                        {
+                            if (rating >= 2)
+                            {
+                                creditScore++;
+                            }
+                        }
+                        else if (drtemp["Mandatory"].ToString() == "YES")
                         {
                             mandatoryGrades = mandatoryGrades + drtemp["Grade"].ToString() + ",";
                             if (rating >= 2) // mandatory subjects need 3 credits
@@ -525,7 +538,7 @@ namespace JobAppHR.Repository
                         successfulExamYear = drtemp["ExamYear"].ToString();
                     }
 
-                    if (totalScore >= 6 && mandatoryScore >= 3)
+                    if (totalScore >= 6 && (ignoreMandatorySubjects ? creditScore >= 3 : mandatoryScore >= 3))
                     {
                         successfulAttempt = i.ToString();
                         isOk = true;
