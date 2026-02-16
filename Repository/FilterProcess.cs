@@ -515,10 +515,11 @@ namespace JobAppHR.Repository
                     foreach (DataRow drtemp in drs)
                     {
                         rating = Convert.ToInt16(drtemp["Rating"]);
+                        var gradeValue = drtemp["Grade"].ToString();
 
                         if (ignoreMandatorySubjects)
                         {
-                            if (rating >= 2)
+                            if (rating >= 2 && !string.Equals(gradeValue, "F", StringComparison.OrdinalIgnoreCase))
                             {
                                 creditScore++;
                             }
@@ -531,8 +532,8 @@ namespace JobAppHR.Repository
                                 mandatoryScore++;
                             }
                         }
-                        
-                        if (rating >= 1)
+
+                        if (rating >= 1 && (!ignoreMandatorySubjects || !string.Equals(gradeValue, "F", StringComparison.OrdinalIgnoreCase)))
                             totalScore++;
 
                         successfulExamYear = drtemp["ExamYear"].ToString();
