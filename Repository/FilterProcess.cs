@@ -431,6 +431,9 @@ namespace JobAppHR.Repository
             DataTable temptbl, scoretbl, maintbl, resulttbl;
             List<OLFilter> list = new();
 
+            //Check if this is TEC/24 position (Technician) - different O/L requirements
+            bool isTechnicianPosition = intakeCode.StartsWith("TEC/24");
+
             //Get intake requirements from database to determine which stage to query
             //This is more robust than relying on currentStage parameter
             //If A/L is required for this position, check Stage2Status (A/L passed)
@@ -485,7 +488,7 @@ namespace JobAppHR.Repository
             string successfulExamYear = "";
             bool isOk = false;
             
-            int mandatoryScore = 0, totalScore = 0, rating = 0;
+            int mandatoryScore = 0, totalScore = 0, creditScore = 0, rating = 0;
             DataRow[] drs;
 
             foreach (DataRow dr in temptbl.Rows) //current stage passed records
@@ -498,17 +501,25 @@ namespace JobAppHR.Repository
                 {
                     totalScore = 0;
                     mandatoryScore = 0;
+                    creditScore = 0;
                     mandatoryGrades = "";
                     rating = 0;
                     successfulExamYear = "";
                     successfulAttempt = "";
                     isOk = false;
+                    bool hasFailedSubject = false;
 
                     drs = scoretbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + i.ToString() + "'");
 
                     foreach (DataRow drtemp in drs)
                     {
                         rating = Convert.ToInt16(drtemp["Rating"]);
+
+                        // Check for failed subjects (F grade has rating 0) or Absent (rating -1)
+                        if (rating < 1)
+                        {
+                            hasFailedSubject = true;
+                        }
 
                         if (drtemp["Mandatory"].ToString() == "YES")
                         {
@@ -522,20 +533,40 @@ namespace JobAppHR.Repository
                         if (rating >= 1)
                             totalScore++;
 
+                        if (rating >= 2) // count all credit passes for TEC/24
+                            creditScore++;
+
                         successfulExamYear = drtemp["ExamYear"].ToString();
                     }
 
-                    if (totalScore >= 6 && mandatoryScore >= 3)
+                    //Check eligibility based on position type
+                    if (isTechnicianPosition)
                     {
-                        successfulAttempt = i.ToString();
-                        isOk = true;
-                        break;
+                        //TEC/24: Need 6 passes (S or better) and 3 credits for ANY subjects (no mandatory requirement)
+                        //AND must not have any failed subjects (no F grades or Absent allowed)
+                        if (totalScore >= 6 && creditScore >= 3 && !hasFailedSubject)
+                        {
+                            successfulAttempt = i.ToString();
+                            isOk = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        //Other positions: Need 6 passes and 3 credits for MANDATORY subjects
+                        //AND must not have any failed subjects (no F grades or Absent allowed)
+                        if (totalScore >= 6 && mandatoryScore >= 3 && !hasFailedSubject)
+                        {
+                            successfulAttempt = i.ToString();
+                            isOk = true;
+                            break;
+                        }
                     }
                 }
 
                 //to be eligible
-                //minimum 3 credits (rating = 2) to manadatory subjects -> count 3
-                //another minimum 3 passes (rating = 1) -> 6
+                //TEC/24: minimum 6 passes (rating >= 1) and 3 credits (rating >= 2) for any subjects
+                //Other positions: minimum 3 credits (rating = 2) to mandatory subjects -> count 3, and minimum 6 passes (rating = 1)
 
                 if (isOk)
                 {
