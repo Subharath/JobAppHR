@@ -431,8 +431,25 @@ namespace JobAppHR.Repository
             DataTable temptbl, scoretbl, maintbl, resulttbl;
             List<OLFilter> list = new();
 
+            ///////////////////////////////////////////////////////////////////////////////
+            ///                                                                         ///
+            ///                         NEW HR REQUIREMENTS                             ///
+            ///                                                                         ///
+            ///////////////////////////////////////////////////////////////////////////////
+
+
             //Check if this is TEC/24 position (Technician) - different O/L requirements
-            bool isTechnicianPosition = intakeCode.StartsWith("TEC/24");
+            bool isTechnicianPosition = intakeCode.StartsWith("TEC/");
+
+            //Check if this is ITN/24 position (IT & Network Officer/Software Developer) - different O/L requirements
+            bool isITNPosition = intakeCode.StartsWith("ITN/");
+
+            //Check if this is TTO/24 position (Telecommunication Technical Officer) - different O/L requirements
+            bool isTTOPosition = intakeCode.StartsWith("TTO/");
+
+            //Check if this is SALA position (SALES ASSISTANT (FEB-2026)) - different O/L requirements
+            bool isSALAPosition = intakeCode.StartsWith("SALA/");
+
 
             //Get intake requirements from database to determine which stage to query
             //This is more robust than relying on currentStage parameter
@@ -497,7 +514,8 @@ namespace JobAppHR.Repository
                 grades = "";
                 mandatoryGrades = "";
 
-                for (int i = 1; i <= 3; i++)
+                //Only consider 1st attempt
+                for (int i = 1; i <= 1; i++)
                 {
                     totalScore = 0;
                     mandatoryScore = 0;
@@ -542,9 +560,41 @@ namespace JobAppHR.Repository
                     //Check eligibility based on position type
                     if (isTechnicianPosition)
                     {
-                        //TEC/24: Need 6 passes (S or better) and 3 credits for ANY subjects (no mandatory requirement)
-                        //AND must not have any failed subjects (no F grades or Absent allowed)
-                        if (totalScore >= 6 && creditScore >= 3 && !hasFailedSubject)
+                        //TEC/24: Need 6 passes (S or better) with 3 credits for ANY subjects (no mandatory requirement)
+                        //Can have up to 3 failed/absent subjects as long as 6 passes include 3 credits
+                        if (totalScore >= 6 && creditScore >= 3)
+                        {
+                            successfulAttempt = i.ToString();
+                            isOk = true;
+                            break;
+                        }
+                    }
+                    else if (isITNPosition)
+                    {
+                        //ITN/24: Need 6 passes and 4 credits for ANY subjects with mandatory requirement)
+                        if (totalScore >= 6 && mandatoryScore >= 3 && creditScore >= 4)
+                        {
+                            successfulAttempt = i.ToString();
+                            isOk = true;
+                            break;
+                        }
+
+                    }
+                    else if (isTTOPosition)
+                    {
+                        //TTO/24: Need 6 passes with 3 credits for MANDATORY subjects
+                        if (totalScore >= 6 && mandatoryScore >= 3)
+                        {
+                            successfulAttempt = i.ToString();
+                            isOk = true;
+                            break;
+                        }
+                    }
+                     else if (isSALAPosition)
+                    {
+                        //SALAPosition: Need 6 passes with no mandatory subject requirement
+                        //Can have failed/absent in non-mandatory subjects as long as total passes are met
+                        if (totalScore >= 6)
                         {
                             successfulAttempt = i.ToString();
                             isOk = true;

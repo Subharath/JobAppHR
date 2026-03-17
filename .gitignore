@@ -32,3 +32,5 @@ appsettings.Local.json
 *.tmp
 *.temp
 *.cache
+
+.github
