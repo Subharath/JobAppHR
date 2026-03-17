@@ -425,6 +425,12 @@ namespace JobAppHR.Repository
         {
             string examcode = "O/L";
 
+            // Keep SALA logic isolated to avoid affecting existing O/L rules.
+            if (intakeCode.StartsWith("SALA/"))
+            {
+                return FilterByOL_SALA(intakeCode, currentStage);
+            }
+
             //1.get the application codes who are PASS in the current stage
             //2.next check O/L results of those application codes 
 
@@ -446,9 +452,6 @@ namespace JobAppHR.Repository
 
             //Check if this is TTO/24 position (Telecommunication Technical Officer) - different O/L requirements
             bool isTTOPosition = intakeCode.StartsWith("TTO/");
-
-            //Check if this is SALA position (SALES ASSISTANT (FEB-2026)) - different O/L requirements
-            bool isSALAPosition = intakeCode.StartsWith("SALA/");
 
 
             //Get intake requirements from database to determine which stage to query
@@ -590,17 +593,7 @@ namespace JobAppHR.Repository
                             break;
                         }
                     }
-                     else if (isSALAPosition)
-                    {
-                        //SALAPosition: Need 6 passes with no mandatory subject requirement
-                        //Can have failed/absent in non-mandatory subjects as long as total passes are met
-                        if (totalScore >= 6)
-                        {
-                            successfulAttempt = i.ToString();
-                            isOk = true;
-                            break;
-                        }
-                    }
+                
                     else
                     {
                         //Other positions: Need 6 passes and 3 credits for MANDATORY subjects
@@ -650,9 +643,142 @@ namespace JobAppHR.Repository
             return list;
         }
 
+        private List<OLFilter> FilterByOL_SALA(string intakeCode, string currentStage)
+        {
+            string examcode = "O/L";
+
+            DataTable temptbl, scoretbl, maintbl, resulttbl;
+            List<OLFilter> list = new();
+
+            // Determine whether current-stage source is Stage1 or Stage2.
+            string sql = "SELECT ALRequired FROM Intake WHERE IntakeCode = '" + intakeCode + "'";
+            DataTable intakeTable = _DBOperations.SelectRows(sql);
+            bool alRequired = false;
+
+            if (intakeTable.Rows.Count > 0)
+            {
+                alRequired = intakeTable.Rows[0]["ALRequired"].ToString() == "1" || intakeTable.Rows[0]["ALRequired"].ToString().ToLower() == "true";
+            }
+
+            if (alRequired)
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND CurrentStage = '2' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+            else
+                sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage1Status = 'PASS' AND CurrentStage = '1' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
+
+            temptbl = _DBOperations.SelectRows(sql);
+
+            // Need subject-wise grades to enforce SALA special rules.
+            sql = "SELECT B.ApplicationCode, B.ExamYear, A.Attempt, A.SubjectName, G.Rating FROM SEResult A " +
+                  "INNER JOIN SEExam B ON A.ApplicationCode = B.ApplicationCode AND B.Attempt = A.Attempt " +
+                  "INNER JOIN Application C ON B.ApplicationCode = C.ApplicationCode " +
+                  "INNER JOIN Grade G ON A.Grade = G.GradeValue " +
+                  "WHERE C.IntakeCode = '" + intakeCode + "' AND A.ExamCode = 'O/L' AND B.ExamCode = 'O/L' " +
+                  "ORDER BY B.ApplicationCode, A.Attempt";
+            scoretbl = _DBOperations.SelectRows(sql);
+
+            string fieldList = "ApplicationCode, Concat(Initials,' ',Surname, ' ') as NameWithInitials";
+            string whereClause = "(IntakeCode = '" + intakeCode + "')";
+            maintbl = _DBOperations.SelectRows("Application", fieldList, "", "", whereClause, "");
+
+            sql = "SELECT A.ApplicationCode, A.Grade, A.Attempt, Count(A.Grade) AS GradeCount FROM SEResult A " +
+                  "INNER JOIN Application B ON A.ApplicationCode = B.ApplicationCode " +
+                  "WHERE B.IntakeCode = '" + intakeCode + "' AND A.ExamCode = 'O/L' " +
+                  "GROUP BY A.ApplicationCode, A.Attempt, A.Grade " +
+                  "ORDER BY A.ApplicationCode, A.Attempt";
+            resulttbl = _DBOperations.SelectRows(sql);
+
+            string applicationCode = "";
+            string grades = "";
+            string successfulAttempt = "";
+            string successfulExamYear = "";
+            DataRow[] drs;
+
+            foreach (DataRow dr in temptbl.Rows)
+            {
+                applicationCode = dr[0].ToString();
+                bool isOk = false;
+                successfulAttempt = "";
+                successfulExamYear = "";
+
+                // SALA rule: not more than 2 sittings.
+                for (int i = 1; i <= 2; i++)
+                {
+                    int totalScore = 0;
+                    int creditScore = 0;
+                    bool hasEnglishCredit = false;
+                    bool hasSinhalaOrTamilPass = false;
+                    bool hasMathsPass = false;
+
+                    drs = scoretbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + i.ToString() + "'");
+
+                    foreach (DataRow drtemp in drs)
+                    {
+                        int rating = Convert.ToInt16(drtemp["Rating"]);
+                        string subjectName = drtemp["SubjectName"].ToString().Trim().ToLowerInvariant();
+
+                        if (rating >= 1)
+                            totalScore++;
+
+                        if (rating >= 2)
+                            creditScore++;
+
+                        if (rating >= 2 && subjectName.Contains("english"))
+                            hasEnglishCredit = true;
+
+                        if (rating >= 1 && (subjectName.Contains("sinhala") || subjectName.Contains("tamil")))
+                            hasSinhalaOrTamilPass = true;
+
+                        if (rating >= 1 && (subjectName.Contains("math") || subjectName.Contains("mathematics")))
+                            hasMathsPass = true;
+
+                        successfulExamYear = drtemp["ExamYear"].ToString();
+                    }
+
+                    // SALA: 6 passes, 4 credits, English >= credit, Sinhala/Tamil >= S, Maths >= S.
+                    if (totalScore >= 6 && creditScore >= 4 && hasEnglishCredit && hasSinhalaOrTamilPass && hasMathsPass)
+                    {
+                        successfulAttempt = i.ToString();
+                        isOk = true;
+                        break;
+                    }
+                }
+
+                if (isOk)
+                {
+                    OLFilter item = new OLFilter();
+                    item.ApplicationCode = applicationCode;
+                    item.ExamCode = examcode;
+                    item.ExamYear = successfulExamYear;
+
+                    drs = maintbl.Select("ApplicationCode = '" + applicationCode + "'");
+                    if (drs.Length > 0)
+                    {
+                        item.NameWithInitials = drs[0]["NameWithInitials"].ToString();
+                    }
+
+                    grades = "";
+                    drs = resulttbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + successfulAttempt + "'");
+                    foreach (DataRow drtemp in drs)
+                    {
+                        grades = grades + drtemp["Grade"].ToString() + drtemp["GradeCount"].ToString() + ",";
+                    }
+
+                    item.Grades = grades;
+                    item.Attempt = successfulAttempt;
+
+                    list.Add(item);
+                }
+            }
+
+            return list;
+        }
+
         public async Task<List<OLFilter>> FilterByOL(string intakeCode, string currentStage)
         {
             // Temporarily bypass FastAPI and use original method only
+            if (intakeCode.StartsWith("SALA/"))
+                return FilterByOL_SALA(intakeCode, currentStage);
+
             return FilterByOL_Org(intakeCode, currentStage);
             
             /*
