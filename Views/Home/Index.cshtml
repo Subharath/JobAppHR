@@ -3,14 +3,27 @@
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
 
-@ViewBag.Message
+<div class="login-shell animate-fade-in-up">
+    <div class="login-card">
+        <div class="login-brand">
+            <span class="login-badge">HR</span>
+            <div>
+                <h1>JOBAPP HR Administration</h1>
+                <p>Administration module of the SLT External Job Recruitment Portal</p>
+            </div>
+        </div>
 
-<div class="container d-flex justify-content-center">
-    <div class="mt-4 p-5 bg-light text-black border border-1 border-light rounded-3">
-        <div class="col-12">
-            <h3>JOBAPP - HR Administration</h3>
-            <button class="btn btn-lg btn-primary w-100 mt-3" onclick="location.href='@Url.Action("AzureLogin", "Home")'">Login with Azure</button>
-        </div>    
+        @if (!string.IsNullOrWhiteSpace(ViewBag.Message as string))
+        {
+            <div class="login-note">@ViewBag.Message</div>
+        }
+
+        <div class="login-actions">
+            <button class="btn btn-lg btn-primary" onclick="location.href='@Url.Action("AzureLogin", "Home")'">
+                <i class="fa-brands fa-microsoft"></i>
+                Login with Azure
+            </button>
+        </div>
     </div>
 </div>
 
