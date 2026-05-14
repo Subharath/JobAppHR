@@ -83,6 +83,7 @@ namespace JobAppHR.Controllers
                     {
                         list = _ManualProcess.FilterByAll(intakeCode, currentStage, currentStatus);
                         ViewBag.CurrentStage = currentStage;
+                        ViewBag.CurrentStatus = currentStatus;
                         if (currentStatus == "TO-CHECK")
                             ViewBag.CurrentStageName = "To-Check list";
                         else
@@ -94,6 +95,7 @@ namespace JobAppHR.Controllers
                     {
                         list = _ManualProcess.FilterByAll(intakeCode, currentStage, "FAIL");
                         ViewBag.CurrentStage = currentStage;
+                        ViewBag.CurrentStatus = "FAIL";
                         ViewBag.CurrentStageName = "Fail list";
                         return View("FilterFinal", list);
                     }

@@ -296,7 +296,7 @@ namespace JobAppHR.Repository
             return list;
         }
 
-        public List<FullReportModel> GetFullReportData(string intakeCode, string currentStage, int? freezeNo = 0, bool showAll = false)
+        public List<FullReportModel> GetFullReportData(string intakeCode, string currentStage, int? freezeNo = 0, bool showAll = false, string currentStatus = "PASS")
         {
             DataTable maintbl, resulttbl, mresulttbl, highertbl, profqualtbl, workexptbl, remarkstbl;
             string sql;
@@ -313,8 +313,11 @@ namespace JobAppHR.Repository
 
             if (currentStage == "FINAL")
             {
+                if (string.IsNullOrWhiteSpace(currentStatus))
+                    currentStatus = "PASS";
+
                 //get current stage FINAL passed applicants of the selected intakecode
-                sql = "SELECT " + fieldList1 + "," + fieldList2 + "," + fieldList3 + " FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.CurrentStage = 'FINAL' AND F.CurrentStatus = 'PASS' AND F.IntakeCode = '" + intakeCode + "'";
+                sql = "SELECT " + fieldList1 + "," + fieldList2 + "," + fieldList3 + " FROM FilteredData F INNER JOIN Application A ON F.ApplicationCode = A.ApplicationCode WHERE F.CurrentStage = 'FINAL' AND F.CurrentStatus = '" + currentStatus + "' AND F.IntakeCode = '" + intakeCode + "'";
                 if (freezeNo.HasValue && freezeNo > 0)
                 {
                     sql = sql + " AND FreezeNo = " + freezeNo.Value;
