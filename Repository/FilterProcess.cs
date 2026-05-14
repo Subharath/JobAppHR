@@ -5,7 +5,10 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using System.Data;
+using System.Runtime.CompilerServices;
 using static System.Net.Mime.MediaTypeNames;
+
+[assembly: InternalsVisibleTo("JobAppHR.Tests")]
 
 namespace JobAppHR.Repository
 {
@@ -425,80 +428,53 @@ namespace JobAppHR.Repository
         {
             string examcode = "O/L";
 
-            // Keep SALA logic isolated to avoid affecting existing O/L rules.
             if (intakeCode.StartsWith("SALA/"))
-            {
                 return FilterByOL_SALA(intakeCode, currentStage);
-            }
 
-            //1.get the application codes who are PASS in the current stage
-            //2.next check O/L results of those application codes 
+            // Position type flags
+            // ITNW / SD / MO  → prefix ITN/
+            // TTO              → prefix TTO/
+            // Technician       → prefix TEC/
+            // All others use the default rule (same as ITN but 3 credits for mandatory)
+            bool isITNPosition = intakeCode.StartsWith("ITN/");
+            bool isTTOPosition = intakeCode.StartsWith("TTO/");
+            bool isTechnicianPosition = intakeCode.StartsWith("TEC/");
 
             DataTable temptbl, scoretbl, maintbl, resulttbl;
             List<OLFilter> list = new();
 
-            ///////////////////////////////////////////////////////////////////////////////
-            ///                                                                         ///
-            ///                         NEW HR REQUIREMENTS                             ///
-            ///                                                                         ///
-            ///////////////////////////////////////////////////////////////////////////////
-
-
-            //Check if this is TEC/24 position (Technician) - different O/L requirements
-            bool isTechnicianPosition = intakeCode.StartsWith("TEC/");
-
-            //Check if this is ITN/24 position (IT & Network Officer/Software Developer) - different O/L requirements
-            bool isITNPosition = intakeCode.StartsWith("ITN/");
-
-            //Check if this is TTO/24 position (Telecommunication Technical Officer) - different O/L requirements
-            bool isTTOPosition = intakeCode.StartsWith("TTO/");
-
-
-            //Get intake requirements from database to determine which stage to query
-            //This is more robust than relying on currentStage parameter
-            //If A/L is required for this position, check Stage2Status (A/L passed)
-            //If A/L is NOT required, check Stage1Status (Age passed) - A/L was skipped
             string sql = "SELECT ALRequired FROM Intake WHERE IntakeCode = '" + intakeCode + "'";
             DataTable intakeTable = _DBOperations.SelectRows(sql);
             bool alRequired = false;
-            
-            if (intakeTable.Rows.Count > 0)
-            {
-                alRequired = intakeTable.Rows[0]["ALRequired"].ToString() == "1" || intakeTable.Rows[0]["ALRequired"].ToString().ToLower() == "true";
-            }
 
-            //get current stage passed applicants of the selected intakecode
-            //if A/L was required, check Stage2Status (A/L result), otherwise check Stage1Status (Age result)
-            //IMPORTANT: Only get records at current stage to avoid re-processing already filtered records
+            if (intakeTable.Rows.Count > 0)
+                alRequired = intakeTable.Rows[0]["ALRequired"].ToString() == "1" || intakeTable.Rows[0]["ALRequired"].ToString().ToLower() == "true";
+
             if (alRequired)
                 sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage2Status = 'PASS' AND CurrentStage = '2' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
             else
                 sql = "SELECT ApplicationCode FROM FilteredData WHERE Stage1Status = 'PASS' AND CurrentStage = '1' AND CurrentStatus = 'PASS' AND IntakeCode = '" + intakeCode + "'";
-            
+
             temptbl = _DBOperations.SelectRows(sql);
 
-            //get O/L grades of all the applicants in the selected intakecode
-            sql = "SELECT B.ApplicationCode, B.ExamYear, B.ExamCode, A.Attempt, A.Grade, S.Mandatory, G.Rating FROM SEResult A " +
+            // Include SubjectName so we can check specific mandatory subjects by name
+            sql = "SELECT B.ApplicationCode, B.ExamYear, B.ExamCode, A.Attempt, A.SubjectName, A.Grade, G.Rating FROM SEResult A " +
                   "INNER JOIN SEExam B ON A.ApplicationCode = B.ApplicationCode AND B.Attempt = A.Attempt " +
                   "INNER JOIN Application C ON B.ApplicationCode = C.ApplicationCode " +
                   "INNER JOIN Grade G ON A.Grade = G.GradeValue " +
-                  "INNER JOIN Subject S ON S.SubjectName = A.SubjectName AND S.ExamCode = A.ExamCode " +
                   "WHERE C.IntakeCode = '" + intakeCode + "' AND A.ExamCode = 'O/L' AND B.ExamCode = 'O/L' " +
                   "ORDER BY B.ApplicationCode, A.Attempt";
             scoretbl = _DBOperations.SelectRows(sql);
 
-            //get all the applicant's name of the selected intakecode
             string fieldList = "ApplicationCode, Concat(Initials,' ',Surname, ' ') as NameWithInitials";
             string whereClause = "(IntakeCode = '" + intakeCode + "')";
             maintbl = _DBOperations.SelectRows("Application", fieldList, "", "", whereClause, "");
 
-            //get grades count of all the applicants of the selected intakecode
             sql = "SELECT A.ApplicationCode, A.Grade, A.Attempt, Count(A.Grade) AS GradeCount FROM SEResult A " +
                   "INNER JOIN Application B ON A.ApplicationCode = B.ApplicationCode " +
                   "WHERE B.IntakeCode = '" + intakeCode + "' AND A.ExamCode = 'O/L' " +
                   "GROUP BY A.ApplicationCode, A.Attempt, A.Grade " +
                   "ORDER BY A.ApplicationCode, A.Attempt";
-
             resulttbl = _DBOperations.SelectRows(sql);
 
             string applicationCode = "";
@@ -507,109 +483,65 @@ namespace JobAppHR.Repository
             string successfulAttempt = "";
             string successfulExamYear = "";
             bool isOk = false;
-            
-            int mandatoryScore = 0, totalScore = 0, creditScore = 0, rating = 0;
             DataRow[] drs;
 
-            foreach (DataRow dr in temptbl.Rows) //current stage passed records
+            foreach (DataRow dr in temptbl.Rows)
             {
                 applicationCode = dr[0].ToString();
                 grades = "";
                 mandatoryGrades = "";
+                isOk = false;
+                successfulAttempt = "";
+                successfulExamYear = "";
 
-                //Only consider 1st attempt
+                // All positions require 1 sitting except SALA (handled separately)
                 for (int i = 1; i <= 1; i++)
                 {
-                    totalScore = 0;
-                    mandatoryScore = 0;
-                    creditScore = 0;
-                    mandatoryGrades = "";
-                    rating = 0;
-                    successfulExamYear = "";
-                    successfulAttempt = "";
-                    isOk = false;
-                    bool hasFailedSubject = false;
+                    int totalScore = 0, creditScore = 0;
+                    bool hasMathsPass = false, hasMathsCredit = false;
+                    bool hasSinhalaOrTamilPass = false, hasSinhalaOrTamilCredit = false;
+                    bool hasEnglishPass = false, hasEnglishCredit = false;
 
                     drs = scoretbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + i.ToString() + "'");
 
                     foreach (DataRow drtemp in drs)
                     {
-                        rating = Convert.ToInt16(drtemp["Rating"]);
+                        int rating = Convert.ToInt16(drtemp["Rating"]);
+                        string subj = drtemp["SubjectName"].ToString().Trim().ToLowerInvariant();
 
-                        // Check for failed subjects (F grade has rating 0) or Absent (rating -1)
-                        if (rating < 1)
+                        if (rating >= 1) totalScore++;
+                        if (rating >= 2) creditScore++;
+
+                        if (subj.Contains("math"))
                         {
-                            hasFailedSubject = true;
+                            if (rating >= 1) hasMathsPass = true;
+                            if (rating >= 2) hasMathsCredit = true;
                         }
-
-                        if (drtemp["Mandatory"].ToString() == "YES")
+                        if (subj.Contains("sinhala") || subj.Contains("tamil"))
                         {
-                            mandatoryGrades = mandatoryGrades + drtemp["Grade"].ToString() + ",";
-                            if (rating >= 2) // mandatory subjects need 3 credits
-                            {
-                                mandatoryScore++;
-                            }
+                            if (rating >= 1) hasSinhalaOrTamilPass = true;
+                            if (rating >= 2) hasSinhalaOrTamilCredit = true;
                         }
-                        
-                        if (rating >= 1)
-                            totalScore++;
-
-                        if (rating >= 2) // count all credit passes for TEC/24
-                            creditScore++;
+                        if (subj.Contains("english"))
+                        {
+                            if (rating >= 1) hasEnglishPass = true;
+                            if (rating >= 2) hasEnglishCredit = true;
+                        }
 
                         successfulExamYear = drtemp["ExamYear"].ToString();
                     }
 
-                    //Check eligibility based on position type
-                    if (isTechnicianPosition)
-                    {
-                        //TEC/24: Need 6 passes (S or better) with 3 credits for ANY subjects (no mandatory requirement)
-                        //Can have up to 3 failed/absent subjects as long as 6 passes include 3 credits
-                        if (totalScore >= 6 && creditScore >= 3)
-                        {
-                            successfulAttempt = i.ToString();
-                            isOk = true;
-                            break;
-                        }
-                    }
-                    else if (isITNPosition)
-                    {
-                        //ITN/24: Need 6 passes and 4 credits for ANY subjects with mandatory requirement)
-                        if (totalScore >= 6 && mandatoryScore >= 3 && creditScore >= 4)
-                        {
-                            successfulAttempt = i.ToString();
-                            isOk = true;
-                            break;
-                        }
+                    isOk = IsOLEligible(intakeCode, totalScore, creditScore,
+                                         hasMathsPass, hasMathsCredit,
+                                         hasSinhalaOrTamilPass, hasSinhalaOrTamilCredit,
+                                         hasEnglishPass, hasEnglishCredit);
 
-                    }
-                    else if (isTTOPosition)
+                    if (isOk)
                     {
-                        //TTO/24: Need 6 passes with 3 credits for MANDATORY subjects
-                        if (totalScore >= 6 && mandatoryScore >= 3)
-                        {
-                            successfulAttempt = i.ToString();
-                            isOk = true;
-                            break;
-                        }
-                    }
-                
-                    else
-                    {
-                        //Other positions: Need 6 passes and 3 credits for MANDATORY subjects
-                        //AND must not have any failed subjects (no F grades or Absent allowed)
-                        if (totalScore >= 6 && mandatoryScore >= 3 && !hasFailedSubject)
-                        {
-                            successfulAttempt = i.ToString();
-                            isOk = true;
-                            break;
-                        }
+                        successfulAttempt = i.ToString();
+                        break;
                     }
                 }
-
-                //to be eligible
-                //TEC/24: minimum 6 passes (rating >= 1) and 3 credits (rating >= 2) for any subjects
-                //Other positions: minimum 3 credits (rating = 2) to mandatory subjects -> count 3, and minimum 6 passes (rating = 1)
 
                 if (isOk)
                 {
@@ -618,19 +550,13 @@ namespace JobAppHR.Repository
                     item.ExamCode = examcode;
                     item.ExamYear = successfulExamYear;
 
-                    //get applicant name
                     drs = maintbl.Select("ApplicationCode = '" + applicationCode + "'");
                     if (drs.Length > 0)
-                    {
                         item.NameWithInitials = drs[0]["NameWithInitials"].ToString();
-                    }
 
-                    //get results
                     drs = resulttbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + successfulAttempt + "'");
                     foreach (DataRow drtemp in drs)
-                    {
                         grades = grades + drtemp["Grade"].ToString() + drtemp["GradeCount"].ToString() + ",";
-                    }
 
                     item.Grades = grades;
                     item.MandatoryGrades = mandatoryGrades;
@@ -641,6 +567,32 @@ namespace JobAppHR.Repository
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Determines O/L eligibility based on position type (derived from intakeCode prefix).
+        /// Ratings: >= 1 = pass (S or above), >= 2 = credit (C or above)
+        /// </summary>
+        internal static bool IsOLEligible(
+            string intakeCode,
+            int totalScore, int creditScore,
+            bool hasMathsPass, bool hasMathsCredit,
+            bool hasSinhalaOrTamilPass, bool hasSinhalaOrTamilCredit,
+            bool hasEnglishPass, bool hasEnglishCredit)
+        {
+            if (intakeCode.StartsWith("TEC/"))
+                // 6 passes, 3 credits (any), Maths/Sinhala-Tamil/English each >= S
+                return totalScore >= 6 && creditScore >= 3
+                       && hasMathsPass && hasSinhalaOrTamilPass && hasEnglishPass;
+
+            if (intakeCode.StartsWith("TTO/"))
+                // 6 passes, 3 credits (any), Maths/Sinhala-Tamil/English each >= credit
+                return totalScore >= 6 && creditScore >= 3
+                       && hasMathsCredit && hasSinhalaOrTamilCredit && hasEnglishCredit;
+
+            // ITN (ITNW/SD/MO) and default: 6 passes, 4 credits (any), Maths/Sinhala-Tamil/English each >= credit
+            return totalScore >= 6 && creditScore >= 4
+                   && hasMathsCredit && hasSinhalaOrTamilCredit && hasEnglishCredit;
         }
 
         private List<OLFilter> FilterByOL_SALA(string intakeCode, string currentStage)
