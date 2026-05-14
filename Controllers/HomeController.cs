@@ -33,6 +33,13 @@ namespace JobAppHR.Controllers
             return View("Home");
         }
 
+        [Authorize(Policy = "NormalUserPolicy")]
+        public IActionResult Settings()
+        {
+            ViewData["Title"] = "Appearance Settings";
+            return View();
+        }
+
         public RedirectResult AzureLogin()
         {
             string tenantID = "534253fc-dfb6-462f-b5ca-cbe81939f5ee";
