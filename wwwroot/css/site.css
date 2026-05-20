@@ -837,3 +837,8 @@ p {
 .text-muted-modern {
   color: var(--text-secondary) !important;
 }
+
+/* Datepicker z-index fix to prevent it from rendering behind the header navbar or modals */
+.datepicker.datepicker-dropdown {
+  z-index: 1100 !important;
+}
