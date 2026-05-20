@@ -2,11 +2,11 @@ name: Deploy JobAppHR to Windows Server (IIS)
 
 on:
   push:
-    branches: ["main"] # Change to your primary branch name
+    branches: ["main"]
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest # Changed from windows-latest for appleboy actions support
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,18 @@ jobs:
       - name: Publish
         run: dotnet publish JobAppHR.csproj -c Release -o ./publish
 
+      # Step 1: Stop the App Pool to release file locks
+      - name: Stop IIS App Pool
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            powershell -Command "Import-Module WebAdministration; Stop-WebAppPool -Name 'JobAppHR'"
+
+      # Step 2: Deploy files safely while application binaries are unlocked
       - name: Deploy via SCP
         uses: appleboy/scp-action@master
         with:
@@ -34,9 +46,10 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           source: "./publish/*"
           target: "C:/inetpub/wwwroot/JobAppHR"
-          strip_components: 1 # Remove the 'publish' folder prefix
+          strip_components: 1
 
-      - name: Restart IIS Site
+      # Step 3: Bring the application back online
+      - name: Start IIS App Pool
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -44,4 +57,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            powershell -Command "Import-Module WebAdministration; Restart-WebAppPool -Name 'JobAppHR'"
+            powershell -Command "Import-Module WebAdministration; Start-WebAppPool -Name 'JobAppHR'"
+            
