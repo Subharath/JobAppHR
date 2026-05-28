@@ -1,4 +1,4 @@
-﻿using JobAppHR.Models;
+using JobAppHR.Models;
 using JobAppHR.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -75,12 +75,12 @@ namespace JobAppHR.Controllers
                 record.TalentPoolJob = collection["TalentPoolJob"];
                 record.InsertedOn = DateTime.Now;
                 record.InsertedBy = userId;
-                
-                record.OLRequired = collection["OLRequired"] == "1" ? 1 : 0;
-                record.ALRequired = collection["ALRequired"] == "1" ? 1 : 0;
-                record.HERequired = collection["HERequired"] == "1" ? 1 : 0;
-                //record.PQRequired = collection["PQRequired"] == "1" ? 1 : 0;
-                //record.WERequired = collection["WERequired"] == "1" ? 1 : 0;
+
+                // Auto-derive required fields from template (server-side enforcement)
+                var flags = DeriveRequiredFieldsFromTemplate(record.JobTemplate);
+                record.OLRequired = flags.OLRequired;
+                record.ALRequired = flags.ALRequired;
+                record.HERequired = flags.HERequired;
 
                 List<JobPosition> list = new List<JobPosition>();
 
@@ -159,11 +159,11 @@ namespace JobAppHR.Controllers
                 record.UpdatedOn = DateTime.Now;
                 record.UpdatedBy = userId;
 
-                record.OLRequired = collection["OLRequired"] == "1" ? 1 : 0;
-                record.ALRequired = collection["ALRequired"] == "1" ? 1 : 0;
-                record.HERequired = collection["HERequired"] == "1" ? 1 : 0;
-                //record.PQRequired = collection["PQRequired"] == "1" ? 1 : 0;
-                //record.WERequired = collection["WERequired"] == "1" ? 1 : 0;
+                // Auto-derive required fields from template (server-side enforcement)
+                var flags = DeriveRequiredFieldsFromTemplate(record.JobTemplate);
+                record.OLRequired = flags.OLRequired;
+                record.ALRequired = flags.ALRequired;
+                record.HERequired = flags.HERequired;
 
                 List<JobPosition> list = new List<JobPosition>();
 
@@ -219,5 +219,21 @@ namespace JobAppHR.Controllers
             }
         }
 
+        /// <summary>
+        /// Derives OLRequired, ALRequired, HERequired flags from the template name.
+        /// This ensures consistency between the template and filter pipeline,
+        /// regardless of what the client sends.
+        /// </summary>
+        private (int OLRequired, int ALRequired, int HERequired) DeriveRequiredFieldsFromTemplate(string jobTemplate)
+        {
+            return jobTemplate switch
+            {
+                "Application_L1" => (1, 1, 1),  // TTO, MO, SD, ITNWO, Talent Pool
+                "Application_L2" => (0, 0, 1),  // Engineer, Accountant
+                "Application_L3" => (1, 0, 0),  // Technician
+                "Application_L4" => (1, 1, 0),  // Interns
+                _ => (1, 1, 1)                   // Default: all required (safest)
+            };
+        }
     }
 }
