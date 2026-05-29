@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Spreadsheet;
 using JobAppHR.Models;
 using JobAppHR.Repository;
 using Microsoft.AspNetCore.Authorization;
@@ -244,6 +244,13 @@ namespace JobAppHR.Controllers
             }
 
             return View("ProcessComplete");
+        }
+
+        [HttpGet]
+        public JsonResult GetJobPositionName(string intakeCode)
+        {
+            var jobPositionName = _DBOperations.GetJobPositionName(intakeCode);
+            return Json(new { jobPositionName });
         }
     }
 }

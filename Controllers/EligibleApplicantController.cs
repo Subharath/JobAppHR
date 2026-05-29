@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Fingers10.ExcelExport.ActionResults;
 using JobAppHR.Models;
@@ -319,5 +319,12 @@ namespace JobAppHR.Controllers
             return View("ProcessComplete");
         }
 
+
+        [HttpGet]
+        public JsonResult GetJobPositionName(string intakeCode)
+        {
+            var jobPositionName = _DBOperations.GetJobPositionName(intakeCode);
+            return Json(new { jobPositionName });
+        }
     }
 }

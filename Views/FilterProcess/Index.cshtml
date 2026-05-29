@@ -1,4 +1,4 @@
-﻿<link href="~/lib/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" />
+<link href="~/lib/bootstrap-select/css/bootstrap-select.min.css" rel="stylesheet" />
 
 <form asp-action="ViewApplicantList">
     <div class="form-group row">
@@ -34,6 +34,9 @@
             </select>
         </div>
         <div class="col-2">
+            <label id="JobPositionName" class="label-display me-4"></label>
+        </div>
+        <div class="col-2">
             <input type="button" value="View" class="btn btn-primary btn-sm" id="btnView" />
         </div>
     </div>
@@ -55,6 +58,12 @@
                 loadResult();
             }
 
+            GetJobPositionName();
+
+            $('#IntakeCode').on('change', function () {
+                GetJobPositionName();
+            });
+
             $('#btnView').click(function () {
                 var intakeCode = $('#IntakeCode').val();
                 if (intakeCode) {
@@ -69,6 +78,17 @@
                 var url = '@Url.Action("ViewSummary", "FilterProcess")';
                 var intakeCode = $('#IntakeCode').val();
                 $('#searchResults').load(url, { intakeCode: intakeCode });
+            }
+
+            function GetJobPositionName()
+            {
+                var intakeCode = $('#IntakeCode').val();
+                fetch('@Url.Action("GetJobPositionName", "FilterProcess")' + '?intakeCode=' + intakeCode)
+                    .then(response => response.json())
+                    .then(data =>
+                    {
+                        $('#JobPositionName').text(data.jobPositionName);
+                    });
             }
         })
     </script>

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using JobAppHR.Repository;
 using JobAppHR.Models;
@@ -838,6 +838,13 @@ namespace JobAppHR.Controllers
             DataTable dataTable = _DBOperations.SelectRows("INTAKE", "IntakeCode, ALRequired, OLRequired","IntakeCode",intakeCode,"");
             List<Intake> list = _UtilityFn.ConvertToList<Intake>(dataTable);
             return list.First();
+        }
+
+        [HttpGet]
+        public JsonResult GetJobPositionName(string intakeCode)
+        {
+            var jobPositionName = _DBOperations.GetJobPositionName(intakeCode);
+            return Json(new { jobPositionName });
         }
     }
 }
