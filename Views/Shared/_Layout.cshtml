@@ -17,7 +17,7 @@
 <body class="admin-body">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark admin-navbar">
-            <div class="container-xxl">
+            <div class="container-fluid px-4">
                 @{ 
                     var headerUserName = Context.User.FindFirst("UserName")?.Value ?? Context.Session.GetString("UserName") ?? "SLTMobitel User";
                     var headerUserRole = Context.User.FindFirst("UserRole")?.Value ?? "Authenticated";
@@ -89,7 +89,7 @@
         </nav>
     </header>
     <main role="main" class="admin-main">
-        <div class="container-xxl">
+        <div class="container-fluid px-4">
             <section class="page-surface animate-fade-in">
                 @RenderBody()
             </section>
