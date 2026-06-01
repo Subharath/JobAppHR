@@ -92,6 +92,18 @@
         color: #212529;
         border-color: #dae0e5;
     }
+
+    .toggle-vis.active {
+        background-color: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+    
+    .toggle-vis.active:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+        color: #fff;
+    }
 </style>
 
 <h4>@ViewData["Title"]</h4>
@@ -110,14 +122,15 @@
 
     <div id="toggleColumnContainer" class="d-none align-items-center flex-wrap gap-2">
         <span class="text-muted small me-2"><i class="fa fa-sliders me-1"></i>Toggle Columns:</span>
-        <a class="toggle-vis" data-column="0">Application Code</a>
-        <a class="toggle-vis" data-column="1">Name</a>
-        <a class="toggle-vis" data-column="2">DOB</a>
-        <a class="toggle-vis" data-column="3">Age</a>
-        <a class="toggle-vis" data-column="4">Overage</a>
-        @if (ViewBag.ALRequired == "1" || ViewBag.ALRequired == "True") { <a class="toggle-vis" data-column="5">A/L</a> }
-        @if (ViewBag.OLRequired == "1" || ViewBag.OLRequired == "True") { <a class="toggle-vis" data-column="6">Mandatory O/L</a> <a class="toggle-vis" data-column="7">O/L</a> }
-        @if (ViewBag.HERequired == "1" || ViewBag.HERequired == "True") { <a class="toggle-vis" data-column="8">Higher Edu.</a> }
+        <a class="toggle-vis active" data-column="0">Application Code</a>
+        <a class="toggle-vis active" data-column="1">Name</a>
+        <a class="toggle-vis active" data-column="2">DOB</a>
+        <a class="toggle-vis active" data-column="3">Age</a>
+        <a class="toggle-vis active" data-column="4">Overage</a>
+        <a class="toggle-vis active" data-column="5">A/L</a>
+        <a class="toggle-vis active" data-column="6">Mandatory O/L</a>
+        <a class="toggle-vis active" data-column="7">O/L</a>
+        <a class="toggle-vis active" data-column="8">Higher Edu.</a>
     </div>
 
     <div class="table-shell">
@@ -465,15 +478,19 @@
             var alReq = '@ViewBag.ALRequired';
             var heReq = '@ViewBag.HERequired';
             
-            if (olReq == '0' || olReq == 'False') {
+            if (olReq == '0' || olReq == 'False' || olReq == 'false' || olReq == '') {
                 table.column(6).visible(false); // M-Grades
                 table.column(7).visible(false); // O/L
+                $('a.toggle-vis[data-column="6"]').addClass('opacity-50').removeClass('active');
+                $('a.toggle-vis[data-column="7"]').addClass('opacity-50').removeClass('active');
             }
-            if (alReq == '0' || alReq == 'False') {
+            if (alReq == '0' || alReq == 'False' || alReq == 'false' || alReq == '') {
                 table.column(5).visible(false); // A/L
+                $('a.toggle-vis[data-column="5"]').addClass('opacity-50').removeClass('active');
             }
-            if (heReq == '0' || heReq == 'False') {
+            if (heReq == '0' || heReq == 'False' || heReq == 'false' || heReq == '') {
                 table.column(8).visible(false); // Higher Edu.
+                $('a.toggle-vis[data-column="8"]').addClass('opacity-50').removeClass('active');
             }
 
             document.querySelectorAll('a.toggle-vis').forEach((el) => {
@@ -484,7 +501,14 @@
                     let column = table.column(columnIdx);
 
                     // Toggle the visibility
-                    column.visible(!column.visible());
+                    var isVisible = !column.visible();
+                    column.visible(isVisible);
+                    
+                    if(isVisible) {
+                        $(this).removeClass('opacity-50').addClass('active');
+                    } else {
+                        $(this).addClass('opacity-50').removeClass('active');
+                    }
                 });
             });
 
