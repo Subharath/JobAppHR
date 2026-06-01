@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JobAppHR.Models.FailedApplicants>
+@model IEnumerable<JobAppHR.Models.FailedApplicants>
 
 @{
     ViewData["Title"] = "Non-Eligible Applicants";
@@ -112,11 +112,11 @@
     </tbody>
 </table>
 
-    <div><h5>When applicants in this list are made Eligible and Saved, they will be transferred to final eligible list</h5></div>
-
-    <br />
-    <div class="float-end">
-        <button id="btnProceed" type="submit" class="btn btn-success">Save & Close</button>
+    <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded border">
+        <h5 class="mb-0 text-muted" style="font-size: 1rem;">When applicants in this list are made Eligible and Saved, they will be transferred to final eligible list</h5>
+        <div class="d-flex gap-2">
+            <button id="btnProceed" type="submit" class="btn btn-success">Save & Close</button>
+        </div>
     </div>
 </form>
 

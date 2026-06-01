@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JobAppHR.Models.ShortListed>
+@model IEnumerable<JobAppHR.Models.ShortListed>
 
 @{
     ViewData["Title"] = "Short-Listed Applicants -  For ";
@@ -242,9 +242,6 @@
         </tbody>
     </table>
 
-    <br />
-    <div><h5>If you have made any changes, first click on Save before moving to the next step or confirming the list</h5></div>
-
     @{
         string btnText = "Next Step";
 
@@ -253,15 +250,14 @@
             btnText = "Confirm Finalists";
         }
 
-
         if (ViewBag.CurrentStage != "")
         {
-            <div class="float-end">
-                <button id="btnProceed" type="submit" class="btn btn-success">Save & Close</button>
-            </div>
-
-            <div class="float-right">
-                <button id="btnNext" type="button" class="btn btn-primary">@btnText</button>
+            <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded border">
+                <h5 class="mb-0 text-muted" style="font-size: 1rem;">If you have made any changes, first click on Save before moving to the next step or confirming the list</h5>
+                <div class="d-flex gap-2">
+                    <button id="btnNext" type="button" class="btn btn-primary">@btnText</button>
+                    <button id="btnProceed" type="submit" class="btn btn-success">Save & Close</button>
+                </div>
             </div>
         }
     }
