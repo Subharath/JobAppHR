@@ -15,6 +15,7 @@
     .table-shell {
         overflow-x: auto;
         padding-bottom: 0.5rem;
+        visibility: hidden; /* Prevent FOUC */
     }
 
     .table-shell .dataTables_wrapper {
@@ -107,7 +108,7 @@
         </div>
     </div>
 
-    <div id="toggleColumnContainer" class="d-flex align-items-center flex-wrap gap-2">
+    <div id="toggleColumnContainer" class="d-none align-items-center flex-wrap gap-2">
         <span class="text-muted small me-2"><i class="fa fa-sliders me-1"></i>Toggle Columns:</span>
         <a class="toggle-vis" data-column="0">Application Code</a>
         <a class="toggle-vis" data-column="1">Name</a>
@@ -409,6 +410,10 @@
                 initComplete: function () {
                     // Move toggle columns to the same line as the search bar (top dt-layout-start)
                     $('.dt-layout-row:first .dt-layout-start').append($('#toggleColumnContainer'));
+                    $('#toggleColumnContainer').removeClass('d-none').addClass('d-flex');
+                    
+                    // Show table after initialization
+                    $('.table-shell').css('visibility', 'visible');
 
                     var r = $('#datagrid tfoot tr');
                     r.find('th').each(function () {
