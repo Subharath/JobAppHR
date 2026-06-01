@@ -70,6 +70,20 @@ namespace JobAppHR.Controllers
             ViewBag.IntakeCode = intakeCode;
             List<ManualFilter> list = new();
 
+            DataTable dataTable = _DBOperations.SelectRows("INTAKE", "OLRequired, ALRequired, HERequired", "IntakeCode", intakeCode, "");
+            if (dataTable.Rows.Count > 0)
+            {
+                ViewBag.OLRequired = dataTable.Rows[0]["OLRequired"].ToString();
+                ViewBag.ALRequired = dataTable.Rows[0]["ALRequired"].ToString();
+                ViewBag.HERequired = dataTable.Rows[0]["HERequired"].ToString();
+            }
+            else
+            {
+                ViewBag.OLRequired = "1";
+                ViewBag.ALRequired = "1";
+                ViewBag.HERequired = "1";
+            }
+
             switch (currentStage)
             {
                 case "0":
