@@ -71,6 +71,26 @@
         padding: 2px 4px;
         width: 100%;
     }
+
+    /* Column toggle pills */
+    .toggle-vis {
+        cursor: pointer;
+        padding: 4px 10px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: #495057;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+        user-select: none;
+    }
+    
+    .toggle-vis:hover {
+        background-color: #e2e6ea;
+        color: #212529;
+        border-color: #dae0e5;
+    }
 </style>
 
 <h4>@ViewData["Title"]</h4>
@@ -84,13 +104,16 @@
         @Html.ActionLink("Export to Excel", "ExportToExcel", "IntakeApplicant", new { intakeCode = @ViewBag.IntakeCode, currentStage = @ViewBag.CurrentStage, currentStatus = @ViewBag.CurrentStatus, freezeNo = @ViewBag.FreezeNo }, new { @class = "btn btn-outline-primary btn-sm" })
     </div>
 
-    <br />
-    <p>Make columns show/hide by clicking on below links</p>
-    <div>
-        <a class="toggle-vis" data-column="0">Application Code</a> - <a class="toggle-vis" data-column="1">Name</a> - <a class="toggle-vis" data-column="2">DOB</a> - <a class="toggle-vis" data-column="3">Age</a> - <a class="toggle-vis" data-column="4">Overage</a>
-        @if (ViewBag.ALRequired == "1" || ViewBag.ALRequired == "True") { <text>- <a class="toggle-vis" data-column="5">A/L</a></text> }
-        @if (ViewBag.OLRequired == "1" || ViewBag.OLRequired == "True") { <text>- <a class="toggle-vis" data-column="6">Mandatory O/L Subject Results</a> - <a class="toggle-vis" data-column="7">O/L</a></text> }
-        @if (ViewBag.HERequired == "1" || ViewBag.HERequired == "True") { <text>- <a class="toggle-vis" data-column="8">Higher Edu.</a></text> }
+    <div class="mb-3 d-flex align-items-center flex-wrap gap-2">
+        <span class="text-muted small me-2"><i class="fa fa-sliders me-1"></i>Toggle Columns:</span>
+        <a class="toggle-vis" data-column="0">Application Code</a>
+        <a class="toggle-vis" data-column="1">Name</a>
+        <a class="toggle-vis" data-column="2">DOB</a>
+        <a class="toggle-vis" data-column="3">Age</a>
+        <a class="toggle-vis" data-column="4">Overage</a>
+        @if (ViewBag.ALRequired == "1" || ViewBag.ALRequired == "True") { <a class="toggle-vis" data-column="5">A/L</a> }
+        @if (ViewBag.OLRequired == "1" || ViewBag.OLRequired == "True") { <a class="toggle-vis" data-column="6">Mandatory O/L</a> <a class="toggle-vis" data-column="7">O/L</a> }
+        @if (ViewBag.HERequired == "1" || ViewBag.HERequired == "True") { <a class="toggle-vis" data-column="8">Higher Edu.</a> }
     </div>
 
     <div class="table-shell">
