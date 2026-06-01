@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JobAppHR.Models.ManualFilter>
+@model IEnumerable<JobAppHR.Models.ManualFilter>
 
 @{
     ViewData["Title"] = "Select in to the final list from - " + ViewBag.CurrentStageName;
@@ -90,9 +90,6 @@
                 @Html.DisplayNameFor(model => model.ProfQual)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.WorkExp)
-            </th>
-            <th>
                 @Html.DisplayNameFor(model => model.CurrentStatus)
             </th>
             <th>
@@ -150,7 +147,7 @@
                             }
                         }
                     </td>
-                    <td>
+                    <td style="max-width: 250px; white-space: normal;">
                         @{
                             if (item.HEQual != null)
                             {
@@ -169,19 +166,6 @@
                             {
                                 string[] profqual = item.ProfQual.Split("|");
                                 foreach (string y in profqual)
-                                {
-                                    <text>&bull; @y</text>
-                                    <br />
-                                }
-                            }
-                        }
-                    </td>
-                    <td>
-                        @{
-                            if (item.WorkExp != null)
-                            {
-                                string[] hequal = item.WorkExp.Split("|");
-                                foreach (string y in hequal)
                                 {
                                     <text>&bull; @y</text>
                                     <br />
@@ -263,7 +247,6 @@
                 <th>O/L</th>
                 <th>Higher Edu.</th>
                 <th>Prof. Qual.</th>
-                <th>Work Exp.</th>
                 <th></th>
                 <th></th>
                 <th></th>
@@ -354,7 +337,7 @@
 
             const table = new DataTable('#datagrid', {
                 columnDefs: [{
-                    targets: [11, 12, 13],
+                    targets: [10, 11, 12],
                     "orderable": false,
                 }],
                 "paging": false,
@@ -373,7 +356,7 @@
                             let column = this;
                             let title = column.footer().textContent;
 
-                            if (colIdx == 11 || colIdx == 12 || colIdx == 13) return;
+                            if (colIdx == 10 || colIdx == 11 || colIdx == 12) return;
 
                             // Create input element
                             let input = document.createElement('input');

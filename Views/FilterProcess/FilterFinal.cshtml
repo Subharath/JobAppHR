@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JobAppHR.Models.FinalFilter>
+@model IEnumerable<JobAppHR.Models.FinalFilter>
 
 @{
     ViewData["Title"] = "Select the Final List";
@@ -22,9 +22,6 @@
                 @Html.DisplayNameFor(model => model.NameWithInitials)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.WorkExp)
-            </th>
-            <th>
                 @Html.DisplayNameFor(model => model.CurrentStatus)
             </th>
             <th>
@@ -44,19 +41,6 @@
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.NameWithInitials)
-                </td>
-                <td>
-                    @{
-                        if (item.WorkExp != null)
-                        {
-                            string[] hequal = item.WorkExp.Split("|");
-                            foreach (string y in hequal)
-                            {
-                                <text>&bull; @y</text>
-                                <br />
-                            }
-                        }
-                    }
                 </td>
                 <td>
                     <input type="checkbox" name="status_@i" id="status_@i" checked/> OK
