@@ -23,18 +23,53 @@
 
     .table-shell table.dataTable tbody td {
         vertical-align: top;
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
+
+    .table-shell table.dataTable thead th {
+        font-size: 0.8rem;
+        padding: 6px;
+        white-space: nowrap;
     }
 
     tfoot input {
-        /*width: 100%;*/
         padding: 3px;
         box-sizing: border-box;
     }
 
     thead input {
-        /*width: 100%;*/
         padding: 3px;
         box-sizing: border-box;
+    }
+
+    /* Column width constraints for professional layout */
+    .col-appcode { width: 100px; }
+    .col-name { width: 140px; }
+    .col-dob { width: 80px; }
+    .col-age { width: 75px; }
+    .col-overage { width: 65px; }
+    .col-al { width: 50px; }
+    .col-mgrades { width: 90px; }
+    .col-ol { width: 50px; }
+    .col-hequal { max-width: 200px; white-space: normal; word-wrap: break-word; }
+    .col-profqual { max-width: 160px; white-space: normal; word-wrap: break-word; }
+    .col-eligible { width: 85px; }
+    .col-remarks { width: 130px; }
+    .col-action { width: 30px; }
+
+    /* Make the eligible dropdown compact */
+    #datagrid select {
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        width: auto;
+    }
+
+    /* Make the remarks input compact */
+    #datagrid input[type="text"] {
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        width: 100%;
     }
 </style>
 
@@ -56,46 +91,46 @@
     </div>
 
     <div class="table-shell">
-    <table class="table table-striped table-bordered dt-responsive compact nowrap" id="datagrid" style="width:100%">
+    <table class="table table-striped table-bordered dt-responsive compact" id="datagrid" style="width:100%">
         <thead>
             <tr>           
-            <th>
+            <th class="col-appcode">
                 App.Code
             </th>
-            <th>
+            <th class="col-name">
                 Name
             </th>
-            <th>
+            <th class="col-dob">
                 @Html.DisplayNameFor(model => model.DOB)
             </th>
-            <th>
+            <th class="col-age">
                 @Html.DisplayNameFor(model => model.Age)
             </th>
-            <th>
+            <th class="col-overage">
                 @Html.DisplayNameFor(model => model.Overage)
             </th>
-            <th>
+            <th class="col-al">
                 @Html.DisplayNameFor(model => model.ALGrades)
             </th>
-            <th>
+            <th class="col-mgrades">
                 M-Grades
             </th>
-            <th>
+            <th class="col-ol">
                 @Html.DisplayNameFor(model => model.OLGrades)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.HEQual)
+            <th class="col-hequal">
+                Higher Edu.
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ProfQual)
+            <th class="col-profqual">
+                Prof. Qual.
             </th>
-            <th>
+            <th class="col-eligible">
                 @Html.DisplayNameFor(model => model.CurrentStatus)
             </th>
-            <th>
+            <th class="col-remarks">
                 @Html.DisplayNameFor(model => model.Remarks)
             </th>
-            <th></th>
+            <th class="col-action"></th>
         </tr>
         </thead>
         <tbody>
@@ -147,7 +182,7 @@
                             }
                         }
                     </td>
-                    <td style="max-width: 250px; white-space: normal;">
+                    <td class="col-hequal">
                         @{
                             if (item.HEQual != null)
                             {
@@ -160,7 +195,7 @@
                             }
                         }
                     </td>
-                    <td>
+                    <td class="col-profqual">
                         @{
                             if (item.ProfQual != null)
                             {
