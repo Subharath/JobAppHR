@@ -133,6 +133,13 @@
         <a class="toggle-vis active" data-column="8">Higher Edu.</a>
     </div>
 
+    <div id="tableLoader" class="position-absolute top-50 start-50 translate-middle text-center z-3" style="margin-top: 50px;">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted mt-3 fw-semibold">Loading applicant data...</p>
+    </div>
+
     <div class="table-shell">
     <table class="table table-striped table-bordered dt-responsive compact" id="datagrid" style="width:100%">
         <thead>
@@ -426,6 +433,7 @@
                     $('#toggleColumnContainer').removeClass('d-none').addClass('d-flex');
                     
                     // Show table after initialization
+                    $('#tableLoader').addClass('d-none');
                     $('.table-shell').css('visibility', 'visible');
 
                     var r = $('#datagrid tfoot tr');
