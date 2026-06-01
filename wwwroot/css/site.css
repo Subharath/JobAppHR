@@ -1222,3 +1222,12 @@ p {
 .datepicker.datepicker-dropdown {
   z-index: 1100 !important;
 }
+
+/* Fix for form-select dropdown icons overlapping long option text */
+.form-select {
+  text-overflow: ellipsis;
+  padding-right: 2.5rem;
+}
+.form-select-sm {
+  padding-right: 2rem;
+}
