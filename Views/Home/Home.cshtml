@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Admin Dashboard";
     var userName = Context.User.FindFirst("UserName")?.Value ?? Context.Session.GetString("UserName") ?? "SLTMobitel User";
     var userId = Context.User.FindFirst("UserId")?.Value ?? Context.Session.GetString("UserId") ?? "Not available";
