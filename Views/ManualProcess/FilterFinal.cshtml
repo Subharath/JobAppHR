@@ -407,8 +407,8 @@
                 }],
                 "paging": false,
                 initComplete: function () {
-                    // Move toggle columns to the same line as the search bar (dt-layout-start)
-                    $('.dt-layout-start').append($('#toggleColumnContainer'));
+                    // Move toggle columns to the same line as the search bar (top dt-layout-start)
+                    $('.dt-layout-row:first .dt-layout-start').append($('#toggleColumnContainer'));
 
                     var r = $('#datagrid tfoot tr');
                     r.find('th').each(function () {
