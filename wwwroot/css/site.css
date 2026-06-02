@@ -1231,3 +1231,14 @@ p {
 .form-select-sm {
   padding-right: 2rem;
 }
+
+/* Table FOUC prevention wrapper */
+.table-shell {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    visibility: hidden; /* Prevent FOUC, revealed in JS */
+}
+
+.table-shell .dataTables_wrapper {
+    width: 100%;
+}
