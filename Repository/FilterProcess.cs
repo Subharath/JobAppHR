@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Spreadsheet;
 using JobAppHR.Models;
 using JobAppHR.Services;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
@@ -494,8 +494,8 @@ namespace JobAppHR.Repository
                 successfulAttempt = "";
                 successfulExamYear = "";
 
-                // All positions require 1 sitting except SALA (handled separately)
-                for (int i = 1; i <= 1; i++)
+                // Check up to 3 attempts (sittings). If they resit and pass all requirements in a subsequent sitting, it will be accepted.
+                for (int i = 1; i <= 3; i++)
                 {
                     int totalScore = 0, creditScore = 0;
                     bool hasMathsPass = false, hasMathsCredit = false;
@@ -590,8 +590,13 @@ namespace JobAppHR.Repository
                 return totalScore >= 6 && creditScore >= 3
                        && hasMathsCredit && hasSinhalaOrTamilCredit && hasEnglishCredit;
 
-            // ITN (ITNW/SD/MO) and default: 6 passes, 4 credits (any), Maths/Sinhala-Tamil/English each >= credit
-            return totalScore >= 6 && creditScore >= 4
+            if (intakeCode.StartsWith("ITN/") || intakeCode.StartsWith("MKO/"))
+                // ITN / MKO: 6 passes, 4 credits (any), Maths/Sinhala-Tamil/English each >= credit
+                return totalScore >= 6 && creditScore >= 4
+                       && hasMathsCredit && hasSinhalaOrTamilCredit && hasEnglishCredit;
+
+            // Universal fallback: 6 passes, 3 credits (Maths/Sinhala-Tamil/English each >= credit)
+            return totalScore >= 6 && creditScore >= 3
                    && hasMathsCredit && hasSinhalaOrTamilCredit && hasEnglishCredit;
         }
 
@@ -652,47 +657,52 @@ namespace JobAppHR.Repository
                 successfulAttempt = "";
                 successfulExamYear = "";
 
-                // SALA rule: not more than 2 sittings.
-                for (int i = 1; i <= 2; i++)
+                // SALA rule: can combine results across 2 sittings (Attempts 1 and 2)
+                Dictionary<string, int> bestGrades = new Dictionary<string, int>();
+
+                drs = scoretbl.Select("ApplicationCode = '" + applicationCode + "' AND (Attempt = '1' OR Attempt = '2')");
+
+                foreach (DataRow drtemp in drs)
                 {
-                    int totalScore = 0;
-                    int creditScore = 0;
-                    bool hasEnglishCredit = false;
-                    bool hasSinhalaOrTamilPass = false;
-                    bool hasMathsPass = false;
+                    int rating = Convert.ToInt16(drtemp["Rating"]);
+                    string subjectName = drtemp["SubjectName"].ToString().Trim().ToLowerInvariant();
 
-                    drs = scoretbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + i.ToString() + "'");
-
-                    foreach (DataRow drtemp in drs)
+                    if (!bestGrades.ContainsKey(subjectName))
                     {
-                        int rating = Convert.ToInt16(drtemp["Rating"]);
-                        string subjectName = drtemp["SubjectName"].ToString().Trim().ToLowerInvariant();
-
-                        if (rating >= 1)
-                            totalScore++;
-
-                        if (rating >= 2)
-                            creditScore++;
-
-                        if (rating >= 2 && subjectName.Contains("english"))
-                            hasEnglishCredit = true;
-
-                        if (rating >= 1 && (subjectName.Contains("sinhala") || subjectName.Contains("tamil")))
-                            hasSinhalaOrTamilPass = true;
-
-                        if (rating >= 1 && (subjectName.Contains("math") || subjectName.Contains("mathematics")))
-                            hasMathsPass = true;
-
-                        successfulExamYear = drtemp["ExamYear"].ToString();
+                        bestGrades[subjectName] = rating;
+                    }
+                    else if (rating > bestGrades[subjectName])
+                    {
+                        bestGrades[subjectName] = rating;
                     }
 
-                    // SALA: 6 passes, 4 credits, English >= credit, Sinhala/Tamil >= S, Maths >= S.
-                    if (totalScore >= 6 && creditScore >= 4 && hasEnglishCredit && hasSinhalaOrTamilPass && hasMathsPass)
-                    {
-                        successfulAttempt = i.ToString();
-                        isOk = true;
-                        break;
-                    }
+                    successfulExamYear = drtemp["ExamYear"].ToString();
+                }
+
+                int totalScore = 0;
+                int creditScore = 0;
+                bool hasEnglishCredit = false;
+                bool hasSinhalaOrTamilPass = false;
+                bool hasMathsPass = false;
+
+                foreach (var kvp in bestGrades)
+                {
+                    string subjectName = kvp.Key;
+                    int rating = kvp.Value;
+
+                    if (rating >= 1) totalScore++;
+                    if (rating >= 2) creditScore++;
+
+                    if (rating >= 2 && subjectName.Contains("english")) hasEnglishCredit = true;
+                    if (rating >= 1 && (subjectName.Contains("sinhala") || subjectName.Contains("tamil"))) hasSinhalaOrTamilPass = true;
+                    if (rating >= 1 && (subjectName.Contains("math") || subjectName.Contains("mathematics"))) hasMathsPass = true;
+                }
+
+                // SALA: 6 passes, 4 credits, English >= credit, Sinhala/Tamil >= S, Maths >= S.
+                if (totalScore >= 6 && creditScore >= 4 && hasEnglishCredit && hasSinhalaOrTamilPass && hasMathsPass)
+                {
+                    successfulAttempt = "1,2";
+                    isOk = true;
                 }
 
                 if (isOk)
@@ -709,7 +719,7 @@ namespace JobAppHR.Repository
                     }
 
                     grades = "";
-                    drs = resulttbl.Select("ApplicationCode = '" + applicationCode + "' AND Attempt = '" + successfulAttempt + "'");
+                    drs = resulttbl.Select("ApplicationCode = '" + applicationCode + "' AND (Attempt = '1' OR Attempt = '2')");
                     foreach (DataRow drtemp in drs)
                     {
                         grades = grades + drtemp["Grade"].ToString() + drtemp["GradeCount"].ToString() + ",";
