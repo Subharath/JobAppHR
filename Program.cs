@@ -18,6 +18,11 @@ var devUserRole = builder.Configuration["Authentication:DevUserRole"] ?? "Admin"
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Persist Data Protection keys to a fixed folder to prevent Antiforgery/Session key loss on App Pool recycle
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new System.IO.DirectoryInfo(@"C:\inetpub\wwwroot\JobAppHR\Keys"))
+    .SetApplicationName("JobAppHR");
+
 builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddSession(options =>
