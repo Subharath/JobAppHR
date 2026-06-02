@@ -1,6 +1,7 @@
 using JobAppHR.Models;
 using JobAppHR.Repository;
 using JobAppHR.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
