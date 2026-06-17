@@ -1,6 +1,7 @@
 using JobAppHR.Models;
 using JobAppHR.Repository;
 using JobAppHR.Services;
+using JobAppHR.Hubs;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.Features;
@@ -19,6 +20,9 @@ var devUserRole = builder.Configuration["Authentication:DevUserRole"] ?? "Admin"
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Add SignalR for real-time collaborative screening
+builder.Services.AddSignalR();
+
 // Persist Data Protection keys to a fixed folder to prevent Antiforgery/Session key loss on App Pool recycle
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new System.IO.DirectoryInfo(@"C:\inetpub\wwwroot\JobAppHR\Keys"))
@@ -34,11 +38,11 @@ builder.Services.AddSession(options =>
 
 builder.Services.Configure<FormOptions>(x => x.ValueCountLimit = 10000);
 
-// MODIFIED FOR LOCAL DEVELOPMENT - Allow anonymous access without Azure AD
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Home/AzureLogin";
+        // When dev fallback is enabled, redirect to DevLogin instead of AzureLogin
+        options.LoginPath = enableDevUserFallback ? "/Home/DevLogin" : "/Home/AzureLogin";
         options.Cookie.Name = "JobAppHRWebCookie";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
         options.SlidingExpiration = true;
@@ -46,16 +50,28 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization(options =>
 {
-    // ALLOW ANONYMOUS ACCESS FOR LOCAL DEVELOPMENT
-    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-        .RequireAssertion(_ => true) // Always return true = always authorized
-        .Build();
-    
-    options.AddPolicy("NormalUserPolicy",
-        policy => policy.RequireAssertion(_ => true)); // Always allow
+    if (enableDevUserFallback)
+    {
+        // DEV/TEST: Allow all access with fallback user
+        options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+            .RequireAssertion(_ => true)
+            .Build();
 
-    options.AddPolicy("AdminUserPolicy",
-        policy => policy.RequireAssertion(_ => true)); // Always allow
+        options.AddPolicy("NormalUserPolicy",
+            policy => policy.RequireAssertion(_ => true));
+
+        options.AddPolicy("AdminUserPolicy",
+            policy => policy.RequireAssertion(_ => true));
+    }
+    else
+    {
+        // PRODUCTION: Proper claim-based policies (Azure AD login)
+        options.AddPolicy("NormalUserPolicy",
+            policy => policy.RequireClaim("UserRole", "Normal", "Admin"));
+
+        options.AddPolicy("AdminUserPolicy",
+            policy => policy.RequireClaim("UserRole", "Admin"));
+    }
 });
 
 builder.Services.AddScoped<IDBOperations, DBOperations>();
@@ -97,10 +113,14 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Middleware order matches production: Authentication -> Authorization -> Session
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseSession();
 
 // Dev or opt-in fallback for server testing when Azure AD is bypassed.
-if (app.Environment.IsDevelopment() || enableDevUserFallback)
+if (enableDevUserFallback)
 {
     app.Use(async (context, next) =>
     {
@@ -129,11 +149,6 @@ if (app.Environment.IsDevelopment() || enableDevUserFallback)
     });
 }
 
-// Enable auth (cookie-based) so HttpContext.User is populated when a cookie exists
-app.UseAuthentication();
-// Keep authorization middleware to prevent errors, but currently policies allow all
-app.UseAuthorization();
-
 app.UseCookiePolicy(
 new CookiePolicyOptions
 {
@@ -152,5 +167,8 @@ app.Use(async (context, next) =>
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Map the SignalR hub for real-time screening
+app.MapHub<ScreeningHub>("/hubs/screening");
 
 app.Run();
