@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Spreadsheet;
 using JobAppHR.Models;
 using JobAppHR.Repository;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -179,6 +179,80 @@ namespace JobAppHR.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        /// <summary>
+        /// Dev login page — only available when EnableDevUserFallback is true.
+        /// Allows testers to login as different users to test multi-user collaborative screening.
+        /// </summary>
+        [AllowAnonymous]
+        public IActionResult DevLogin(string? returnUrl)
+        {
+            // Only allow dev login when fallback is enabled
+            var enableDevFallback = HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()
+                .GetValue<bool>("Authentication:EnableDevUserFallback");
+
+            if (!enableDevFallback)
+                return RedirectToAction("AzureLogin");
+
+            // Get list of active users from DB
+            string sql = "SELECT UserId, UserGroup FROM Users WHERE ActiveStatus = 'ACTIVE' ORDER BY UserId";
+            DataTable userTable = _DBOperations.SelectRows(sql);
+            ViewBag.UserList = userTable;
+            ViewBag.ReturnUrl = returnUrl ?? "/";
+            return View();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> DevLogin(string userId, string? returnUrl)
+        {
+            var enableDevFallback = HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()
+                .GetValue<bool>("Authentication:EnableDevUserFallback");
+
+            if (!enableDevFallback)
+                return RedirectToAction("AzureLogin");
+
+            // Look up user in DB
+            string sql = "SELECT UserId, UserGroup FROM Users WHERE UserId = '" + userId + "' AND ActiveStatus = 'ACTIVE'";
+            DataTable dataTable = _DBOperations.SelectRows(sql);
+
+            if (dataTable.Rows.Count == 0)
+            {
+                ViewBag.Error = "User not found or inactive.";
+                return DevLogin(returnUrl);
+            }
+
+            string userGroup = dataTable.Rows[0]["UserGroup"].ToString() ?? "";
+            string userRole = (userGroup == "0" || userGroup == "1") ? "Admin" : "Normal";
+            string userName = "Dev-" + userId; // Display name for dev
+
+            var claims = new List<Claim>
+            {
+                new Claim("UserRole", userRole),
+                new Claim("UserId", userId),
+                new Claim("UserName", userName),
+                new Claim("UserEmail", userId + "@dev.local"),
+                new Claim("UserGroup", userGroup),
+            };
+
+            var claimsIdentity = new ClaimsIdentity(
+                claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity));
+
+            // Store in session too
+            HttpContext.Session.SetString("UserId", userId);
+            HttpContext.Session.SetString("UserName", userName);
+            HttpContext.Session.SetString("UserEmail", userId + "@dev.local");
+            HttpContext.Session.SetString("UserGroup", userGroup);
+            HttpContext.Session.SetString("UserRole", userRole);
+
+            return Redirect(returnUrl ?? "/");
         }
     }
 }
