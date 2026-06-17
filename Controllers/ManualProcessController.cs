@@ -236,6 +236,103 @@ namespace JobAppHR.Controllers
             return RedirectToAction("Index", new {selectedIntakeCode = intakeCode});
         }
 
+        /// <summary>
+        /// Per-row AJAX save for real-time collaborative screening.
+        /// Saves a single applicant's status/remarks change immediately.
+        /// </summary>
+        [HttpPost]
+        public IActionResult UpdateSingleApplicant([FromBody] SingleApplicantUpdate model)
+        {
+            try
+            {
+                User user = _UtilityFn.GetCurrentUser();
+                string userId = user.UserId;
+                string userName = user.UserName;
+
+                string remarks = "";
+                string currentStage = "FINAL";
+
+                // Build remarks based on status change
+                if (!string.IsNullOrWhiteSpace(model.NewRemarks))
+                    remarks = model.NewRemarks + "-" + userId + ",";
+
+                if (model.NewStatus == "PASS")
+                {
+                    if (string.IsNullOrEmpty(model.OldStatus) || model.OldStatus == "FAIL" || model.OldStatus == "TO-CHECK")
+                        remarks = remarks + eligibleRemark + "-" + userId + ",";
+                }
+                else if (model.NewStatus == "FAIL")
+                {
+                    if (string.IsNullOrEmpty(model.OldStatus) || model.OldStatus == "PASS" || model.OldStatus == "TO-CHECK")
+                        remarks = remarks + noneligibleRemark + "-" + userId + ",";
+                }
+                else // TO-CHECK
+                {
+                    if (string.IsNullOrEmpty(model.OldStatus) || model.OldStatus != "TO-CHECK")
+                        remarks = remarks + "need to check-" + userId + ",";
+                }
+
+                // Truncate remarks to 500 chars
+                if (remarks.Length > 500)
+                    remarks = remarks.Substring(0, 500);
+
+                DataTable dataTable = new();
+                dataTable.Columns.Add("ApplicationCode");
+                dataTable.Columns.Add("IntakeCode");
+                dataTable.Columns.Add("CurrentStage");
+                dataTable.Columns.Add("CurrentStatus");
+                dataTable.Columns.Add("FinalStatus");
+                dataTable.Columns.Add("FinalRemarks");
+                dataTable.Columns.Add("FinalUpdatedBy");
+                dataTable.Columns.Add("FinalUpdatedOn");
+
+                DataRow dr = dataTable.NewRow();
+                dr["ApplicationCode"] = model.ApplicationCode;
+                dr["IntakeCode"] = model.IntakeCode;
+                dr["CurrentStage"] = currentStage;
+                dr["CurrentStatus"] = model.NewStatus;
+                dr["FinalStatus"] = model.NewStatus;
+                dr["FinalRemarks"] = remarks;
+                dr["FinalUpdatedBy"] = userId;
+                dr["FinalUpdatedOn"] = DateTime.Now;
+                dataTable.Rows.Add(dr);
+
+                string message;
+
+                if (model.PreviousStage == "0") // First-time processing — insert
+                {
+                    message = _DBOperations.InsertRecords("FilteredData", dataTable, false);
+
+                    // Also update Application.Processed = YES
+                    DataTable appTable = new();
+                    appTable.Columns.Add("ApplicationCode");
+                    appTable.Columns.Add("Processed");
+                    DataRow appRow = appTable.NewRow();
+                    appRow["ApplicationCode"] = model.ApplicationCode;
+                    appRow["Processed"] = "YES";
+                    appTable.Rows.Add(appRow);
+                    _DBOperations.UpdateRecords("Application", appTable, "ApplicationCode");
+                }
+                else // Subsequent edit — update
+                {
+                    message = _DBOperations.UpdateRecords("FilteredData", dataTable, "ApplicationCode");
+                }
+
+                return Json(new
+                {
+                    success = message == "SUCCESS",
+                    updatedBy = userId,
+                    updatedByName = userName,
+                    updatedOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    remarks = remarks
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
         public IActionResult ConfirmFinal(string intakeCode)
         {
             //for both intake types final freezed list is saved calling the same method in Repository/FilterProcess.cs
