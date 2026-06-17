@@ -17,6 +17,14 @@
     {
       "library": "datatables.net@2.1.2",
       "destination": "wwwroot/lib/datatables.net/"
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "@microsoft/signalr@6.0.25",
+      "destination": "wwwroot/lib/signalr/",
+      "files": [
+        "dist/browser/signalr.min.js"
+      ]
     }
   ]
 }

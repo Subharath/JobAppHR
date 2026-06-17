@@ -104,9 +104,147 @@
         border-color: #0a58ca;
         color: #fff;
     }
+
+    /* ── Real-Time Collaborative Screening Styles ── */
+
+    /* Row locked by another user */
+    .row-locked {
+        opacity: 0.6;
+        pointer-events: none;
+        position: relative;
+    }
+    .row-locked select,
+    .row-locked input[type="text"] {
+        background-color: #f0f0f0 !important;
+        cursor: not-allowed;
+    }
+
+    /* Row flash on remote update */
+    .row-remote-update {
+        animation: rowFlash 2s ease;
+    }
+    @@keyframes rowFlash {
+        0%   { background-color: #d4edda; }
+        100% { background-color: transparent; }
+    }
+
+    /* Lock badge */
+    .lock-badge {
+        display: inline-block;
+        background: #ff6b35;
+        color: #fff;
+        font-size: 0.6rem;
+        padding: 1px 6px;
+        border-radius: 8px;
+        white-space: nowrap;
+        margin-left: 4px;
+        font-weight: 600;
+        animation: fadeIn 0.3s ease;
+    }
+
+    /* Save indicator */
+    .save-indicator {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: 0.7rem;
+    }
+    .si-saving { color: #6c757d; }
+    .si-saved  { color: #198754; }
+    .si-error  { color: #dc3545; }
+
+    /* Connection status */
+    .connection-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.7rem;
+        padding: 2px 10px;
+        border-radius: 12px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .status-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .dot-connected    { background: #198754; box-shadow: 0 0 4px #198754; }
+    .dot-connecting   { background: #ffc107; }
+    .dot-reconnecting { background: #ffc107; animation: pulse 1s infinite; }
+    .dot-disconnected { background: #dc3545; }
+    @@keyframes pulse { 50% { opacity: 0.4; } }
+    @@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Active users panel */
+    .active-users-panel {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        color: #495057;
+    }
+    .user-chip-small {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        background: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+    }
+    .user-chip-self {
+        background: #cfe2ff;
+        color: #084298;
+    }
+
+    /* Toast notifications */
+    .screening-toasts {
+        position: fixed;
+        top: 70px;
+        right: 16px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        pointer-events: none;
+    }
+    .screening-toast {
+        background: #212529;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        transform: translateX(20px);
+        transition: all 0.3s ease;
+        pointer-events: auto;
+    }
+    .screening-toast.toast-show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    .screening-toast.toast-hide {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    .toast-warning { background: #856404; }
+    .toast-error   { background: #842029; }
 </style>
 
-<h4>@ViewData["Title"]</h4>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">@ViewData["Title"]</h4>
+    <div class="d-flex align-items-center gap-3">
+        <div id="activeUsersPanel" class="active-users-panel d-none">
+            <i class="fa fa-users text-muted"></i>
+            <span class="active-users-list"></span>
+        </div>
+        <div id="connectionStatus" class="connection-status status-connecting">
+            <span class="status-dot dot-connecting"></span>
+            <span class="status-text">Connecting...</span>
+        </div>
+    </div>
+</div>
 
 <form id="form" asp-action="UpdateFinal" method="post">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -186,7 +324,7 @@
         <tbody>
             @foreach (var item in Model) 
             {
-                <tr>            
+                <tr data-app-code="@item.ApplicationCode">            
                     <td>
                         @Html.ActionLink(item.ApplicationCode,"ViewApplicantData","IntakeApplicant",new {applicationCode = item.ApplicationCode}, new { target = "_blank" })
                         <input type="hidden" asp-for="@item.ApplicationCode" />
@@ -356,17 +494,10 @@
 
 @section Scripts {
     <script src="~/lib/sweetalert/sweetalert.min.js"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
     <script>
         $(document).ready(function() 
         {
-            //$('#datagrid').DataTable({
-            //    "paging": false,
-            //    columnDefs: [
-            //        { targets: [$('thead tr th').length - 1],"orderable": false,}
-            //    ],
-            //    scrollX: true,
-            //});
-
             $('input[type="checkbox"]').change(function (event) {
                 var ctrlId = $(this).attr('id');
                 var statusId = "#currentstatus_" + ctrlId.substring(7);
@@ -374,7 +505,6 @@
 
                 if (this.checked) {
                     $(statusId).val("PASS");
-                    //alert($(statusId).val());
                 }
                 else {
                     $(statusId).val("FAIL");
@@ -385,10 +515,8 @@
                 var optionSelected = $("option:selected", this);
                 var valueSelected = $(this).val();
 
-                //alert(valueSelected);
-
                 var ctrlId = $(this).attr('id');
-                var statusId = "#currentstatus_" + ctrlId.substring(7); //7 is starting index of id of the element status_
+                var statusId = "#currentstatus_" + ctrlId.substring(7);
                 var remarksId = "#remarks_" + ctrlId.substring(7);
 
                 $(statusId).val(valueSelected);
@@ -407,16 +535,13 @@
                         if (willConfirm) {
                             if (intakeCode.indexOf('/TP') != -1) //found
                             {
-                                //alert("tp");
                                 var url = '@Url.Action("ConfirmFinal", "ManualProcess", new { intakeCode = ViewBag.IntakeCode })';
                             }
                             else
                             {
-                                //alert("pp");
                                 var url = '@Url.Action("ConfirmFinal", "FilterProcess", new { intakeCode = ViewBag.IntakeCode })';
                             }
                             window.location.href = url;
-                            //window.location.href = "/ManualProcess/ManualProcess?intakeCode=" + intakeCode;
                         }
                     });
             });
@@ -441,7 +566,6 @@
                         $(this).css('padding', 5);
                     });
                     $('#datagrid thead').append(r);
-                    //$('#search_0').css('text-align', 'center');
 
                     this.api()
                         .columns()
@@ -539,4 +663,19 @@
             });
         });
     </script>
+
+    @* ── Real-Time Collaborative Screening Configuration ── *@
+    <script>
+        window.ScreeningConfig = {
+            intakeCode:     '@ViewBag.IntakeCode',
+            currentStage:   '@ViewBag.CurrentStage',
+            currentStatus:  '@(ViewBag.CurrentStatus ?? "")',
+            currentUserId:  '@(Context.User.FindFirst("UserId")?.Value ?? "")',
+            currentUserName:'@(Context.User.FindFirst("UserName")?.Value ?? "")',
+            hubUrl:         '@Url.Content("~/hubs/screening")',
+            saveUrl:        '@Url.Action("UpdateSingleApplicant", "ManualProcess")',
+            antiForgeryToken: document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+        };
+    </script>
+    <script src="~/js/screening-realtime.js" asp-append-version="true"></script>
 }
