@@ -11,11 +11,6 @@ using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 var enableDevUserFallback = builder.Configuration.GetValue<bool>("Authentication:EnableDevUserFallback");
-var devUserId = builder.Configuration["Authentication:DevUserId"] ?? "dev-user";
-var devUserName = builder.Configuration["Authentication:DevUserName"] ?? "Developer";
-var devUserEmail = builder.Configuration["Authentication:DevUserEmail"] ?? "dev@example.com";
-var devUserGroup = builder.Configuration["Authentication:DevUserGroup"] ?? "DEV";
-var devUserRole = builder.Configuration["Authentication:DevUserRole"] ?? "Admin";
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -52,16 +47,13 @@ builder.Services.AddAuthorization(options =>
 {
     if (enableDevUserFallback)
     {
-        // DEV/TEST: Allow all access with fallback user
-        options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-            .RequireAssertion(_ => true)
-            .Build();
-
+        // DEV/TEST: Require authentication (must log in via DevLogin page)
+        // but don't enforce specific claims — any authenticated user is allowed
         options.AddPolicy("NormalUserPolicy",
-            policy => policy.RequireAssertion(_ => true));
+            policy => policy.RequireAuthenticatedUser());
 
         options.AddPolicy("AdminUserPolicy",
-            policy => policy.RequireAssertion(_ => true));
+            policy => policy.RequireAuthenticatedUser());
     }
     else
     {
@@ -118,36 +110,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseSession();
-
-// Dev or opt-in fallback for server testing when Azure AD is bypassed.
-if (enableDevUserFallback)
-{
-    app.Use(async (context, next) =>
-    {
-        if (context.User?.Identity?.IsAuthenticated != true)
-        {
-            var userId = context.Session.GetString("UserId") ?? devUserId;
-            var userName = context.Session.GetString("UserName") ?? devUserName;
-            var userEmail = context.Session.GetString("UserEmail") ?? devUserEmail;
-            var userGroup = context.Session.GetString("UserGroup") ?? devUserGroup;
-            var userRole = context.Session.GetString("UserRole") ?? devUserRole;
-
-            var claims = new List<Claim>
-            {
-                new Claim("UserId", userId),
-                new Claim("UserName", userName),
-                new Claim("UserEmail", userEmail),
-                new Claim("UserGroup", userGroup),
-                new Claim("UserRole", userRole)
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            context.User = new ClaimsPrincipal(identity);
-        }
-
-        await next();
-    });
-}
 
 app.UseCookiePolicy(
 new CookiePolicyOptions
