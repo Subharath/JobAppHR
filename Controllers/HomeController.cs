@@ -60,7 +60,7 @@ namespace JobAppHR.Controllers
             try
             {
                 string clientId = "57ab62d2-0f80-4eb9-9015-0c5b15a23330";
-                string clientSecret = "2US8Q~DDPwJlQYnfC1ljr1yP5vWoX.kMmjmXWdjS";
+                string clientSecret = "zxu8Q~6W3G3M64iJEyj~s2bC29MomTZwn44EVdgE";
                 string tenantId = "534253fc-dfb6-462f-b5ca-cbe81939f5ee";
                 string redirectUri = StaticData.BaseUrl + "/Home/UAzure"; //"https://localhost:7161/Home/UAzure";
                 string baseUrl = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
