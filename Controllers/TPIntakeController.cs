@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Spreadsheet;
 using JobAppHR.Models;
 using JobAppHR.Repository;
 using Microsoft.AspNetCore.Authorization;
@@ -32,8 +32,30 @@ namespace JobAppHR.Controllers
             List<IntakeViewModel> list = _UtilityFn.ConvertToList<IntakeViewModel>(tmpTable);
 
             ViewBag.Message = msg;
+            ViewBag.IsTalentPoolEnabled = _DBOperations.IsTalentPoolEnabled();
+            ViewBag.UserGroup = User.FindFirst("UserGroup")?.Value;
 
             return View(list);
+        }
+
+        [HttpPost]
+        public IActionResult ToggleTalentPoolStatus([FromBody] bool isEnabled)
+        {
+            var userGroup = User.FindFirst("UserGroup")?.Value;
+            if (userGroup != "1" && userGroup != "0")
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                _DBOperations.UpdateTalentPoolStatus(isEnabled);
+                return Ok(new { success = true, message = "Status updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
         }
 
         // GET: TPIntakeController/Details/5
