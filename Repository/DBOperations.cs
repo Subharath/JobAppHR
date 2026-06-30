@@ -1,4 +1,4 @@
-﻿using JobAppHR.Models;
+using JobAppHR.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -397,5 +397,33 @@ namespace JobAppHR.Repository
             return dataTable;
         }
 
+        public bool IsTalentPoolEnabled()
+        {
+            string sql = "SELECT IsTalentPoolEnabled FROM TalentPoolSettings";
+            DataTable dt = SelectRows(sql);
+            if (dt.Rows.Count > 0)
+            {
+                return dt.Rows[0]["IsTalentPoolEnabled"] != DBNull.Value && Convert.ToBoolean(dt.Rows[0]["IsTalentPoolEnabled"]);
+            }
+            return false; // Default to false if no setting is found
+        }
+
+        public void UpdateTalentPoolStatus(bool isEnabled)
+        {
+            using SqlConnection con = _dbConnection.GetDbConnection();
+            using SqlCommand sqlCmd = con.CreateCommand();
+            con.Open();
+            // Assuming single row in settings table
+            sqlCmd.CommandText = "UPDATE TalentPoolSettings SET IsTalentPoolEnabled = @isEnabled";
+            sqlCmd.Parameters.Add(new SqlParameter("@isEnabled", SqlDbType.Bit)).Value = isEnabled;
+            
+            int rowsAffected = sqlCmd.ExecuteNonQuery();
+            if (rowsAffected == 0)
+            {
+                // If table is empty, insert
+                sqlCmd.CommandText = "INSERT INTO TalentPoolSettings (IsTalentPoolEnabled) VALUES (@isEnabled)";
+                sqlCmd.ExecuteNonQuery();
+            }
+        }
     }
 }

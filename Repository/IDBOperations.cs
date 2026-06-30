@@ -1,4 +1,4 @@
-﻿using JobAppHR.Models;
+using JobAppHR.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Data;
 
@@ -16,5 +16,7 @@ namespace JobAppHR.Repository
         string GetJobPositionCodeById(int jobPositionID);
         string GetJobPositionName(string intakeCode = "", string jobPositionCode = "");
         DataTable GetFilteringCriteriaOfJobPosition(string intakeCode);
+        bool IsTalentPoolEnabled();
+        void UpdateTalentPoolStatus(bool isEnabled);
     }
 }
