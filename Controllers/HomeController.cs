@@ -254,5 +254,18 @@ namespace JobAppHR.Controllers
 
             return Redirect(returnUrl ?? "/");
         }
+
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout()
+        {
+            // Clear the authentication cookie
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // Clear the session
+            HttpContext.Session.Clear();
+
+            // Redirect back to home (which will force a login)
+            return RedirectToAction("Index");
+        }
     }
 }

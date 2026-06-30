@@ -76,13 +76,22 @@
                             <span class="admin-settings-link-icon"><i class="fa-solid fa-gear"></i></span>
                             <span class="admin-settings-link-text">Settings</span>
                         </a>
-                        <span class="user-chip">
-                            <i class="fa-solid fa-user-large" aria-hidden="true"></i>
-                            <span class="user-chip-copy">
-                                <span>@headerUserName</span>
-                                <small>@headerUserRole</small>
+                        <div class="dropdown">
+                            <span class="user-chip dropdown-toggle" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                                <i class="fa-solid fa-user-large" aria-hidden="true"></i>
+                                <span class="user-chip-copy">
+                                    <span>@headerUserName</span>
+                                    <small>@headerUserRole</small>
+                                </span>
                             </span>
-                        </span>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuButton">
+                                <li>
+                                    <a class="dropdown-item text-danger" asp-controller="Home" asp-action="Logout">
+                                        <i class="fa-solid fa-right-from-bracket me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
