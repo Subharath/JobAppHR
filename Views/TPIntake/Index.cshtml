@@ -1,4 +1,4 @@
-﻿@model IEnumerable<JobAppHR.Models.IntakeViewModel>
+@model IEnumerable<JobAppHR.Models.IntakeViewModel>
 
 @{
     ViewData["Title"] = "Talent Pool Intakes";
@@ -12,9 +12,20 @@
 </style>
 
 <h1>@ViewData["Title"]</h1>
-<p>
-    <a asp-action="Create" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus" aria-hidden="true"></i>&nbsp;Create New</a>
-</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="mb-0">
+        <a asp-action="Create" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus" aria-hidden="true"></i>&nbsp;Create New</a>
+    </p>
+
+    @if (ViewBag.UserGroup == "0" || ViewBag.UserGroup == "1")
+    {
+        <div class="form-check form-switch d-flex align-items-center bg-light p-2 rounded border" style="padding-left: 2.5rem !important;">
+            <input class="form-check-input me-2" type="checkbox" role="switch" id="talentPoolToggle" style="width: 2.5rem; height: 1.25rem; margin-left: -2rem;" @(ViewBag.IsTalentPoolEnabled ? "checked" : "")>
+            <label class="form-check-label fw-bold" for="talentPoolToggle" style="cursor: pointer;">Enable Talent Pool Intake</label>
+        </div>
+    }
+</div>
+
 <div class="alert alert-info">
     <h5 style="text-align: center">@ViewBag.Message</h5>
 </div>
@@ -78,7 +89,50 @@
                 $('.alert').show();
             else
                 $('.alert').hide();
+
+            $('#talentPoolToggle').on('change', function(e) {
+                var isChecked = $(this).is(':checked');
+                var toggleSwitch = $(this);
+                
+                var titleText = isChecked ? "Enable Talent Pool Intake?" : "Disable Talent Pool Intake?";
+                var messageText = isChecked 
+                    ? "This will enable the Talent Pool Intake in the JobApp."
+                    : "This will remove the Talent Pool Intake from the JobApp.";
+
+                swal({
+                    title: titleText,
+                    text: messageText,
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: !isChecked,
+                })
+                .then((willConfirm) => {
+                    if (willConfirm) {
+                        $.ajax({
+                            url: '@Url.Action("ToggleTalentPoolStatus", "TPIntake")',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(isChecked),
+                            success: function(res) {
+                                if(res.success) {
+                                    swal("Success!", res.message, "success");
+                                } else {
+                                    swal("Error!", "Failed to update status: " + res.message, "error");
+                                    toggleSwitch.prop('checked', !isChecked); // revert
+                                }
+                            },
+                            error: function(err) {
+                                swal("Error!", "An error occurred while updating the status.", "error");
+                                toggleSwitch.prop('checked', !isChecked); // revert
+                            }
+                        });
+                    } else {
+                        toggleSwitch.prop('checked', !isChecked); // revert on cancel
+                    }
+                });
+            });
         });
 
     </script>
+    <script src="~/lib/sweetalert/sweetalert.min.js"></script>
 }
